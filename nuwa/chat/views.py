@@ -32,10 +32,36 @@ class ChatBotView(APIView):
         if example_dialogs:
             system_parts.append(f"Example dialog:\n{example_dialogs}")
 
+        history = request.data.get("history", [])
+        if not isinstance(history, list):
+            return Response(
+                {"error": "'history' must be a list of message objects."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        valid_roles = {"user", "assistant"}
+        for msg in history:
+            if not isinstance(msg, dict):
+                return Response(
+                    {"error": "Each message in 'history' must be an object with 'role' and 'content'."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            role = msg.get("role")
+            content = msg.get("content")
+            if role not in valid_roles or not isinstance(content, str) or not content.strip():
+                return Response(
+                    {
+                        "error": "Each history message must have a 'role' "
+                                 "('user' or 'assistant') and non-empty 'content'."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         messages = []
         if system_parts:
             system_prompt = "\n\n".join(system_parts)
             messages.append({"role": "system", "content": system_prompt})
+
+        messages.extend(history)
+        messages.append({"role": "user", "content": user_message.strip()})
 
         payload = {
             "model": model,
