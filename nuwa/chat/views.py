@@ -20,14 +20,26 @@ class ChatBotView(APIView):
                 {"error": "Message is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        scenario = request.data.get("scenario", "").strip()
+        personality = request.data.get("personality", "").strip()
+        example_dialogs = request.data.get("example_dialogs", "").strip()
+
+        system_parts = []
+        if scenario:
+            system_parts.append(f"Scenario: {scenario}")
+        if personality:
+            system_parts.append(f"Personality: {personality}")
+        if example_dialogs:
+            system_parts.append(f"Example dialog:\n{example_dialogs}")
+
+        messages = []
+        if system_parts:
+            system_prompt = "\n\n".join(system_parts)
+            messages.append({"role": "system", "content": system_prompt})
+
         payload = {
             "model": model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": user_message,
-                }
-            ],
+            "messages": messages,
             "stream": False,
             "think": "medium",
         }
@@ -41,5 +53,11 @@ class ChatBotView(APIView):
         except requests.exceptions.RequestException as e:
             return Response(
                 {"error": "Failed to reach AI service", "detail": str(e)},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+        except Exception as e:
+            return Response(
+                {"error": "AI generation failed", "detail": str(e)},
                 status=status.HTTP_502_BAD_GATEWAY
             )
