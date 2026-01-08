@@ -15,6 +15,7 @@ model = "qwen3-next:80b"
 class ChatBotView(APIView):
     def post(self, request):
         user_message = request.data.get("message")
+        print(f"message: {user_message}")
         if not user_message:
             return Response(
                 {"error": "Message is required"},
@@ -72,6 +73,7 @@ class ChatBotView(APIView):
         try:
             response = client.chat(**payload)
             ai_response = response.message.content
+            print(f"Answer: {ai_response}")
             return Response(
                 {"response": ai_response},
                 status=status.HTTP_200_OK
