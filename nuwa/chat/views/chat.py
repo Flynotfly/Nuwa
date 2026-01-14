@@ -14,6 +14,8 @@ from rest_framework import status
 from django.conf import settings
 from ollama import Client
 
+from chat.models import Character
+
 
 client = Client(
     host="https://ollama.com",
@@ -25,23 +27,26 @@ model = "qwen3-next:80b"
 class ChatBotView(APIView):
     def post(self, request):
         user_message = request.data.get("message")
+        character_id = request.data.get("character_id")
         print(f"message: {user_message}")
         if not user_message:
             return Response(
                 {"error": "Message is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        scenario = request.data.get("scenario", "").strip()
-        personality = request.data.get("personality", "").strip()
-        example_dialogs = request.data.get("example_dialogs", "").strip()
-
-        system_parts = []
-        if scenario:
-            system_parts.append(f"Scenario: {scenario}")
-        if personality:
-            system_parts.append(f"Personality: {personality}")
-        if example_dialogs:
-            system_parts.append(f"Example dialog:\n{example_dialogs}")
+        if not character_id:
+            return Response(
+                {"error": "Character_id is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        character = Character.objects.filter(pk=character_id).first()
+        if not character:
+            return Response(
+                {"error": "Character id is invalid"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        system_prompt = character.system_prompt
+        messages = [{"role": "system", "content": system_prompt}]
 
         history = request.data.get("history", [])
         if not isinstance(history, list):
@@ -65,11 +70,6 @@ class ChatBotView(APIView):
                                  "('user' or 'assistant') and non-empty 'content'."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-
-        messages = []
-        if system_parts:
-            system_prompt = "\n\n".join(system_parts)
-            messages.append({"role": "system", "content": system_prompt})
 
         messages.extend(history)
         messages.append({"role": "user", "content": user_message.strip()})

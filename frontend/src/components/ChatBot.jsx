@@ -1,5 +1,5 @@
 // src/components/ChatBot.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
     Box,
@@ -9,8 +9,8 @@ import {
     Paper,
     FormControl,
     InputLabel,
-    OutlinedInput,
-    FormHelperText,
+    Select,
+    MenuItem,
     CircularProgress,
     Alert,
     useTheme,
@@ -23,10 +23,10 @@ const ChatBot = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    // Context settings
-    const [scenario, setScenario] = useState('');
-    const [personality, setPersonality] = useState('');
-    const [exampleDialogs, setExampleDialogs] = useState('');
+    // Character selection
+    const [characters, setCharacters] = useState([]);
+    const [selectedCharacterId, setSelectedCharacterId] = useState('');
+    const [loadingCharacters, setLoadingCharacters] = useState(true);
 
     // Chat state
     const [messages, setMessages] = useState([]);
@@ -34,9 +34,28 @@ const ChatBot = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Fetch public characters on mount
+    useEffect(() => {
+        const fetchCharacters = async () => {
+            try {
+                const response = await axios.get('http://localhost:8000/characters');
+                setCharacters(response.data);
+                if (response.data.length > 0) {
+                    setSelectedCharacterId(response.data[0].id); // auto-select first
+                }
+            } catch (err) {
+                console.error('Failed to fetch characters:', err);
+                setError('Could not load available characters.');
+            } finally {
+                setLoadingCharacters(false);
+            }
+        };
+        fetchCharacters();
+    }, []);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!inputMessage.trim()) return;
+        if (!inputMessage.trim() || !selectedCharacterId) return;
 
         const userMsg = { role: 'user', content: inputMessage.trim() };
         setMessages(prev => [...prev, userMsg]);
@@ -47,9 +66,7 @@ const ChatBot = () => {
         try {
             const response = await axios.post('http://localhost:8000/chat', {
                 message: inputMessage.trim(),
-                scenario: scenario.trim(),
-                personality: personality.trim(),
-                example_dialogs: exampleDialogs.trim(),
+                character_id: selectedCharacterId, // <-- send selected character
                 history: messages,
             }, {
                 headers: {
@@ -73,9 +90,6 @@ const ChatBot = () => {
 
     const handleClear = () => {
         setMessages([]);
-        setScenario('');
-        setPersonality('');
-        setExampleDialogs('');
         setError('');
     };
 
@@ -100,7 +114,7 @@ const ChatBot = () => {
                 Ollama AI Chatbot
             </Typography>
 
-            {/* Context Settings Panel */}
+            {/* Character Selection */}
             <Paper
                 elevation={3}
                 sx={{
@@ -110,65 +124,34 @@ const ChatBot = () => {
                 }}
             >
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
-                    AI Personality Settings
+                    Choose a Character
                 </Typography>
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                    <FormControl fullWidth>
-                        <InputLabel htmlFor="scenario">Scenario</InputLabel>
-                        <OutlinedInput
-                            id="scenario"
-                            label="Scenario"
-                            value={scenario}
-                            onChange={(e) => setScenario(e.target.value)}
-                            placeholder="e.g., You're a fitness coach helping with workout plans"
-                            multiline
-                            rows={2}
-                            sx={{ borderRadius: 2 }}
-                        />
-                    </FormControl>
-
-                    <FormControl fullWidth>
-                        <InputLabel htmlFor="personality">Personality</InputLabel>
-                        <OutlinedInput
-                            id="personality"
-                            label="Personality"
-                            value={personality}
-                            onChange={(e) => setPersonality(e.target.value)}
-                            placeholder="e.g., Friendly, knowledgeable, and motivational"
-                            sx={{ borderRadius: 2 }}
-                        />
-                    </FormControl>
-
-                    <FormControl fullWidth>
-                        <InputLabel htmlFor="examples">Example Dialogs</InputLabel>
-                        <OutlinedInput
-                            id="examples"
-                            label="Example Dialogs"
-                            value={exampleDialogs}
-                            onChange={(e) => setExampleDialogs(e.target.value)}
-                            placeholder={`User: How do I start?\nAssistant: First, tell me your goals!`}
-                            multiline
-                            rows={3}
-                            sx={{ borderRadius: 2 }}
-                        />
-                        <FormHelperText>
-                            Show the AI how conversations should flow
-                        </FormHelperText>
-                    </FormControl>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button
-                            variant="outlined"
-                            color="error"
-                            startIcon={<RestartAltIcon />}
-                            onClick={handleClear}
-                            sx={{ borderRadius: 2 }}
-                        >
-                            Clear Settings
-                        </Button>
-                    </Box>
-                </Box>
+                <FormControl fullWidth>
+                    <InputLabel id="character-select-label">Character</InputLabel>
+                    <Select
+                        labelId="character-select-label"
+                        value={selectedCharacterId}
+                        onChange={(e) => setSelectedCharacterId(e.target.value)}
+                        label="Character"
+                        disabled={loadingCharacters}
+                        sx={{ borderRadius: 2 }}
+                    >
+                        {loadingCharacters ? (
+                            <MenuItem disabled>
+                                <CircularProgress size={20} />
+                            </MenuItem>
+                        ) : characters.length === 0 ? (
+                            <MenuItem disabled>No characters available</MenuItem>
+                        ) : (
+                            characters.map((char) => (
+                                <MenuItem key={char.id} value={char.id}>
+                                    {char.name}
+                                </MenuItem>
+                            ))
+                        )}
+                    </Select>
+                </FormControl>
             </Paper>
 
             {/* Chat Interface */}
@@ -289,7 +272,7 @@ const ChatBot = () => {
                             value={inputMessage}
                             onChange={(e) => setInputMessage(e.target.value)}
                             placeholder="Type your message..."
-                            disabled={loading}
+                            disabled={loading || !selectedCharacterId}
                             multiline
                             maxRows={3}
                             sx={{
@@ -301,7 +284,7 @@ const ChatBot = () => {
                         <Button
                             type="submit"
                             variant="contained"
-                            disabled={loading || !inputMessage.trim()}
+                            disabled={loading || !inputMessage.trim() || !selectedCharacterId}
                             sx={{
                                 borderRadius: 2,
                                 minWidth: { xs: 'auto', sm: 100 },
@@ -314,6 +297,19 @@ const ChatBot = () => {
                     </Box>
                 </Box>
             </Paper>
+
+            {/* Clear Button Below Chat */}
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                <Button
+                    variant="outlined"
+                    color="error"
+                    startIcon={<RestartAltIcon />}
+                    onClick={handleClear}
+                    sx={{ borderRadius: 2 }}
+                >
+                    Clear Conversation
+                </Button>
+            </Box>
         </Box>
     );
 };
