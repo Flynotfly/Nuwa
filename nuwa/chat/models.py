@@ -10,7 +10,10 @@ class Character(models.Model):
     )
     name = models.CharField(max_length=50)
     system_prompt = models.TextField()
-    description = models.TextField()
+    description = models.TextField(
+        blank=True,
+        null=True,
+    )
     is_private = models.BooleanField()
 
     class Meta:
