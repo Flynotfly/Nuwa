@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from django.urls import reverse
 
+
 class ChatBotTestCase(APITestCase):
     def test_send_message(self):
         response = self.client.post(
