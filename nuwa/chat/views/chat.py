@@ -14,6 +14,7 @@ from rest_framework import status
 from django.conf import settings
 from ollama import Client
 
+
 client = Client(
     host="https://ollama.com",
     headers={"Authorization": "Bearer " + settings.OLLAMA_API_KEY}

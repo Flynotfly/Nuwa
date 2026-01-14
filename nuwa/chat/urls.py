@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import ChatBotView, GenerateImageView, ComfyWebhookReceiver
+from .views.chat import ChatBotView, GenerateImageView, ComfyWebhookReceiver
 
 
 app_name = "chat"
