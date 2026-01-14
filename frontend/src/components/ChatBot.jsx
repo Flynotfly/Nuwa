@@ -1,13 +1,35 @@
+// src/components/ChatBot.jsx
 import React, { useState } from 'react';
+import axios from 'axios';
+import {
+    Box,
+    TextField,
+    Button,
+    Typography,
+    Paper,
+    FormControl,
+    InputLabel,
+    OutlinedInput,
+    FormHelperText,
+    CircularProgress,
+    Alert,
+    useTheme,
+    useMediaQuery,
+} from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 
 const ChatBot = () => {
-    // Context settings (optional)
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+    // Context settings
     const [scenario, setScenario] = useState('');
     const [personality, setPersonality] = useState('');
     const [exampleDialogs, setExampleDialogs] = useState('');
 
     // Chat state
-    const [messages, setMessages] = useState([]); // [{role: 'user'|'assistant', content: '...'}]
+    const [messages, setMessages] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -17,40 +39,33 @@ const ChatBot = () => {
         if (!inputMessage.trim()) return;
 
         const userMsg = { role: 'user', content: inputMessage.trim() };
-        const newMessages = [...messages, userMsg];
-        setMessages(newMessages);
+        setMessages(prev => [...prev, userMsg]);
         setInputMessage('');
         setLoading(true);
         setError('');
 
         try {
-            const response = await fetch('http://localhost:8000/chat', {
-                method: 'POST',
+            const response = await axios.post('http://localhost:8000/chat', {
+                message: inputMessage.trim(),
+                scenario: scenario.trim(),
+                personality: personality.trim(),
+                example_dialogs: exampleDialogs.trim(),
+                history: messages,
+            }, {
                 headers: {
                     'Content-Type': 'application/json',
-                    // Add CSRF token if using Django session auth
-                    // 'X-CSRFToken': getCookie('csrftoken'),
                 },
-                body: JSON.stringify({
-                    message: inputMessage.trim(),
-                    scenario: scenario.trim(),
-                    personality: personality.trim(),
-                    example_dialogs: exampleDialogs.trim(),
-                    history: messages, // full history sent each time
-                }),
+                timeout: 30000,
             });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-            const aiMsg = { role: 'assistant', content: data.response };
-            setMessages((prev) => [...prev, aiMsg]);
+            const aiMsg = { role: 'assistant', content: response.data.response };
+            setMessages(prev => [...prev, aiMsg]);
         } catch (err) {
-            setError(`Failed to get response: ${err.message}`);
-            // Optionally remove user message on failure? Or keep it.
+            console.error('Chat API error:', err);
+            const errorMsg = err.response?.data?.error ||
+                err.message ||
+                'Failed to get response from AI service';
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -65,122 +80,241 @@ const ChatBot = () => {
     };
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
-            <h2>Ollama Chatbot</h2>
+        <Box
+            sx={{
+                maxWidth: 900,
+                margin: '0 auto',
+                padding: { xs: 2, md: 3 },
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+            }}
+        >
+            <Typography
+                variant={isMobile ? "h5" : "h4"}
+                component="h1"
+                align="center"
+                gutterBottom
+                sx={{ fontWeight: 600 }}
+            >
+                Ollama AI Chatbot
+            </Typography>
 
-            {/* Context Settings */}
-            <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
-                <h3>AI Context (Optional)</h3>
-                <label>
-                    Scenario:
-                    <textarea
-                        value={scenario}
-                        onChange={(e) => setScenario(e.target.value)}
-                        placeholder="e.g., You are a fitness coach..."
-                        style={{ width: '100%', height: '60px', marginTop: '5px' }}
-                    />
-                </label>
-                <br />
-                <label>
-                    Personality:
-                    <input
-                        type="text"
-                        value={personality}
-                        onChange={(e) => setPersonality(e.target.value)}
-                        placeholder="e.g., Friendly, professional, concise"
-                        style={{ width: '100%', marginTop: '5px' }}
-                    />
-                </label>
-                <br />
-                <label>
-                    Example Dialogs:
-                    <textarea
-                        value={exampleDialogs}
-                        onChange={(e) => setExampleDialogs(e.target.value)}
-                        placeholder={`User: Hello\nAssistant: Hi there!`}
-                        style={{ width: '100%', height: '80px', marginTop: '5px' }}
-                    />
-                </label>
-                <button
-                    type="button"
-                    onClick={handleClear}
-                    style={{ marginTop: '10px', padding: '5px 10px', backgroundColor: '#ff6b6b', color: 'white', border: 'none', borderRadius: '4px' }}
-                >
-                    Clear All
-                </button>
-            </div>
+            {/* Context Settings Panel */}
+            <Paper
+                elevation={3}
+                sx={{
+                    padding: 2.5,
+                    borderRadius: 2,
+                    backgroundColor: theme.palette.background.paper,
+                }}
+            >
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
+                    AI Personality Settings
+                </Typography>
 
-            {/* Chat History */}
-            <div style={{ height: '400px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '10px', borderRadius: '8px' }}>
-                {messages.length === 0 ? (
-                    <p style={{ color: '#888' }}>No messages yet. Start a conversation!</p>
-                ) : (
-                    messages.map((msg, idx) => (
-                        <div
-                            key={idx}
-                            style={{
-                                textAlign: msg.role === 'user' ? 'right' : 'left',
-                                marginBottom: '10px',
-                            }}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                    <FormControl fullWidth>
+                        <InputLabel htmlFor="scenario">Scenario</InputLabel>
+                        <OutlinedInput
+                            id="scenario"
+                            label="Scenario"
+                            value={scenario}
+                            onChange={(e) => setScenario(e.target.value)}
+                            placeholder="e.g., You're a fitness coach helping with workout plans"
+                            multiline
+                            rows={2}
+                            sx={{ borderRadius: 2 }}
+                        />
+                    </FormControl>
+
+                    <FormControl fullWidth>
+                        <InputLabel htmlFor="personality">Personality</InputLabel>
+                        <OutlinedInput
+                            id="personality"
+                            label="Personality"
+                            value={personality}
+                            onChange={(e) => setPersonality(e.target.value)}
+                            placeholder="e.g., Friendly, knowledgeable, and motivational"
+                            sx={{ borderRadius: 2 }}
+                        />
+                    </FormControl>
+
+                    <FormControl fullWidth>
+                        <InputLabel htmlFor="examples">Example Dialogs</InputLabel>
+                        <OutlinedInput
+                            id="examples"
+                            label="Example Dialogs"
+                            value={exampleDialogs}
+                            onChange={(e) => setExampleDialogs(e.target.value)}
+                            placeholder={`User: How do I start?\nAssistant: First, tell me your goals!`}
+                            multiline
+                            rows={3}
+                            sx={{ borderRadius: 2 }}
+                        />
+                        <FormHelperText>
+                            Show the AI how conversations should flow
+                        </FormHelperText>
+                    </FormControl>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="outlined"
+                            color="error"
+                            startIcon={<RestartAltIcon />}
+                            onClick={handleClear}
+                            sx={{ borderRadius: 2 }}
                         >
-                            <strong>{msg.role === 'user' ? 'You' : 'AI'}:</strong>
-                            <div
-                                style={{
-                                    display: 'inline-block',
-                                    padding: '8px 12px',
-                                    backgroundColor: msg.role === 'user' ? '#e3f2fd' : '#f1f1f1',
-                                    borderRadius: '12px',
-                                    maxWidth: '80%',
-                                    wordWrap: 'break-word',
-                                }}
-                            >
-                                {msg.content}
-                            </div>
-                        </div>
-                    ))
-                )}
-                {loading && (
-                    <div style={{ textAlign: 'left' }}>
-                        <strong>AI:</strong>
-                        <div style={{ display: 'inline-block', padding: '8px 12px', backgroundColor: '#f1f1f1', borderRadius: '12px' }}>
-                            Thinking...
-                        </div>
-                    </div>
-                )}
-                {error && (
-                    <div style={{ color: 'red', marginTop: '10px' }}>
-                        ❌ {error}
-                    </div>
-                )}
-            </div>
+                            Clear Settings
+                        </Button>
+                    </Box>
+                </Box>
+            </Paper>
 
-            {/* Input Form */}
-            <form onSubmit={handleSubmit}>
-        <textarea
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message..."
-            rows="3"
-            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}
-            disabled={loading}
-        />
-                <button
-                    type="submit"
-                    disabled={loading || !inputMessage.trim()}
-                    style={{
-                        marginTop: '10px',
-                        padding: '10px 20px',
-                        backgroundColor: '#4CAF50',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
+            {/* Chat Interface */}
+            <Paper
+                elevation={3}
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: 500,
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    backgroundColor: theme.palette.background.default,
+                }}
+            >
+                {/* Messages Area */}
+                <Box
+                    sx={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        padding: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1.5,
                     }}
                 >
-                    {loading ? 'Sending...' : 'Send'}
-                </button>
-            </form>
-        </div>
+                    {messages.length === 0 ? (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '100%',
+                                color: 'text.secondary'
+                            }}
+                        >
+                            <Typography variant="body1">
+                                Start a conversation with the AI assistant
+                            </Typography>
+                        </Box>
+                    ) : (
+                        messages.map((msg, idx) => (
+                            <Box
+                                key={idx}
+                                sx={{
+                                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                    maxWidth: '85%',
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        backgroundColor:
+                                            msg.role === 'user'
+                                                ? theme.palette.primary.main
+                                                : theme.palette.grey[200],
+                                        color:
+                                            msg.role === 'user'
+                                                ? theme.palette.primary.contrastText
+                                                : theme.palette.text.primary,
+                                        padding: 1.5,
+                                        borderRadius: 2,
+                                        borderTopLeftRadius: msg.role === 'user' ? 2 : 0,
+                                        borderTopRightRadius: msg.role === 'user' ? 0 : 2,
+                                        wordBreak: 'break-word',
+                                        whiteSpace: 'pre-wrap',
+                                    }}
+                                >
+                                    {msg.content}
+                                </Box>
+                            </Box>
+                        ))
+                    )}
+
+                    {loading && (
+                        <Box sx={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+                            <Box
+                                sx={{
+                                    backgroundColor: theme.palette.grey[200],
+                                    padding: 1.5,
+                                    borderRadius: 2,
+                                    borderTopRightRadius: 0,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1,
+                                }}
+                            >
+                                <CircularProgress size={20} />
+                                <Typography variant="body2">AI is thinking...</Typography>
+                            </Box>
+                        </Box>
+                    )}
+
+                    {error && (
+                        <Alert
+                            severity="error"
+                            onClose={() => setError('')}
+                            sx={{ alignSelf: 'center', width: '100%' }}
+                        >
+                            {error}
+                        </Alert>
+                    )}
+                </Box>
+
+                {/* Input Area */}
+                <Box
+                    component="form"
+                    onSubmit={handleSubmit}
+                    sx={{
+                        padding: 2,
+                        borderTop: `1px solid ${theme.palette.divider}`,
+                        backgroundColor: theme.palette.background.paper,
+                    }}
+                >
+                    <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            size="small"
+                            value={inputMessage}
+                            onChange={(e) => setInputMessage(e.target.value)}
+                            placeholder="Type your message..."
+                            disabled={loading}
+                            multiline
+                            maxRows={3}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: 2,
+                                }
+                            }}
+                        />
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={loading || !inputMessage.trim()}
+                            sx={{
+                                borderRadius: 2,
+                                minWidth: { xs: 'auto', sm: 100 },
+                                padding: '8px 16px',
+                            }}
+                            endIcon={<SendIcon />}
+                        >
+                            {isMobile ? 'Send' : 'Send Message'}
+                        </Button>
+                    </Box>
+                </Box>
+            </Paper>
+        </Box>
     );
 };
 
