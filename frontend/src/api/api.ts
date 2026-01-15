@@ -17,8 +17,6 @@ const URLs = Object.freeze({
   REGISTER: '/user/register',
   SESSION: '/user/session',
   REFRESH: '/user/refresh',
-
-  SEARCH: '/user/search',
 })
 
 let isRefreshing = false;
@@ -138,6 +136,4 @@ export function getSession(): Promise<SessionData> {
   });
 }
 
-export function searchUsers(search: string): Promise<ShortUserInfo[]> {
-  return api.get(URLs.SEARCH).then()
-}
+
