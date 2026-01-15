@@ -1,23 +1,19 @@
-import React from 'react';
-import ChatBot from './components/ChatBot';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
+import Router from './Router'
+import { AuthProvider } from './auth/AuthProvider'
+import theme from "./theme";
+import {CssBaseline, ThemeProvider} from "@mui/material";
 
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: '#1976d2', // You can customize this
-        },
-    },
-});
 
 function App() {
+
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <ChatBot />
+            <AuthProvider>
+                <Router />
+            </AuthProvider>
         </ThemeProvider>
-    );
+    )
 }
 
-export default App;
+export default App
