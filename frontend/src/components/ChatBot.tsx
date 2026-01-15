@@ -1,16 +1,10 @@
-// src/components/ChatBot.jsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
     Box,
     TextField,
     Button,
     Typography,
     Paper,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     CircularProgress,
     Alert,
     useTheme,
@@ -18,71 +12,46 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { useParams } from 'react-router-dom';
+import { sendChatMessage } from '../api/api';
+import { ChatMessage } from '../types/chat';
 
 const ChatBot = () => {
+    const { id } = useParams<{ id: string }>();
+    const characterId = Number(id);
+
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-    // Character selection
-    const [characters, setCharacters] = useState([]);
-    const [selectedCharacterId, setSelectedCharacterId] = useState('');
-    const [loadingCharacters, setLoadingCharacters] = useState(true);
-
-    // Chat state
-    const [messages, setMessages] = useState([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputMessage, setInputMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Fetch public characters on mount
+    // Validate character ID
     useEffect(() => {
-        const fetchCharacters = async () => {
-            try {
-                const response = await axios.get('http://localhost:8000/characters');
-                setCharacters(response.data);
-                if (response.data.length > 0) {
-                    setSelectedCharacterId(response.data[0].id); // auto-select first
-                }
-            } catch (err) {
-                console.error('Failed to fetch characters:', err);
-                setError('Could not load available characters.');
-            } finally {
-                setLoadingCharacters(false);
-            }
-        };
-        fetchCharacters();
-    }, []);
+        if (!characterId || isNaN(characterId)) {
+            setError('Invalid character selected.');
+        }
+    }, [characterId]);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!inputMessage.trim() || !selectedCharacterId) return;
+        if (!inputMessage.trim() || !characterId) return;
 
-        const userMsg = { role: 'user', content: inputMessage.trim() };
-        setMessages(prev => [...prev, userMsg]);
+        const userMsg: ChatMessage = { role: 'user', content: inputMessage.trim() };
+        setMessages((prev) => [...prev, userMsg]);
         setInputMessage('');
         setLoading(true);
         setError('');
 
         try {
-            const response = await axios.post('http://localhost:8000/chat', {
-                message: inputMessage.trim(),
-                character_id: selectedCharacterId, // <-- send selected character
-                history: messages,
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                timeout: 30000,
-            });
-
-            const aiMsg = { role: 'assistant', content: response.data.response };
-            setMessages(prev => [...prev, aiMsg]);
+            const res = await sendChatMessage(characterId, inputMessage.trim());
+            const aiMsg: ChatMessage = { role: 'assistant', content: res.response };
+            setMessages((prev) => [...prev, aiMsg]);
         } catch (err) {
-            console.error('Chat API error:', err);
-            const errorMsg = err.response?.data?.error ||
-                err.message ||
-                'Failed to get response from AI service';
-            setError(errorMsg);
+            console.error('Chat error:', err);
+            setError('Failed to get response from AI.');
         } finally {
             setLoading(false);
         }
@@ -92,6 +61,14 @@ const ChatBot = () => {
         setMessages([]);
         setError('');
     };
+
+    if (!characterId || isNaN(characterId)) {
+        return (
+            <Box sx={{ maxWidth: 600, margin: '2rem auto', padding: 2 }}>
+                <Alert severity="error">Invalid character ID.</Alert>
+            </Box>
+        );
+    }
 
     return (
         <Box
@@ -105,56 +82,15 @@ const ChatBot = () => {
             }}
         >
             <Typography
-                variant={isMobile ? "h5" : "h4"}
+                variant={isMobile ? 'h5' : 'h4'}
                 component="h1"
                 align="center"
                 gutterBottom
                 sx={{ fontWeight: 600 }}
             >
-                Ollama AI Chatbot
+                Chat with AI
             </Typography>
 
-            {/* Character Selection */}
-            <Paper
-                elevation={3}
-                sx={{
-                    padding: 2.5,
-                    borderRadius: 2,
-                    backgroundColor: theme.palette.background.paper,
-                }}
-            >
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
-                    Choose a Character
-                </Typography>
-
-                <FormControl fullWidth>
-                    <InputLabel id="character-select-label">Character</InputLabel>
-                    <Select
-                        labelId="character-select-label"
-                        value={selectedCharacterId}
-                        onChange={(e) => setSelectedCharacterId(e.target.value)}
-                        label="Character"
-                        disabled={loadingCharacters}
-                        sx={{ borderRadius: 2 }}
-                    >
-                        {loadingCharacters ? (
-                            <MenuItem disabled>
-                                <CircularProgress size={20} />
-                            </MenuItem>
-                        ) : characters.length === 0 ? (
-                            <MenuItem disabled>No characters available</MenuItem>
-                        ) : (
-                            characters.map((char) => (
-                                <MenuItem key={char.id} value={char.id}>
-                                    {char.name}
-                                </MenuItem>
-                            ))
-                        )}
-                    </Select>
-                </FormControl>
-            </Paper>
-
-            {/* Chat Interface */}
             <Paper
                 elevation={3}
                 sx={{
@@ -166,7 +102,6 @@ const ChatBot = () => {
                     backgroundColor: theme.palette.background.default,
                 }}
             >
-                {/* Messages Area */}
                 <Box
                     sx={{
                         flex: 1,
@@ -184,11 +119,11 @@ const ChatBot = () => {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 height: '100%',
-                                color: 'text.secondary'
+                                color: 'text.secondary',
                             }}
                         >
                             <Typography variant="body1">
-                                Start a conversation with the AI assistant
+                                Start a conversation!
                             </Typography>
                         </Box>
                     ) : (
@@ -254,7 +189,6 @@ const ChatBot = () => {
                     )}
                 </Box>
 
-                {/* Input Area */}
                 <Box
                     component="form"
                     onSubmit={handleSubmit}
@@ -272,19 +206,19 @@ const ChatBot = () => {
                             value={inputMessage}
                             onChange={(e) => setInputMessage(e.target.value)}
                             placeholder="Type your message..."
-                            disabled={loading || !selectedCharacterId}
+                            disabled={loading}
                             multiline
                             maxRows={3}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
                                     borderRadius: 2,
-                                }
+                                },
                             }}
                         />
                         <Button
                             type="submit"
                             variant="contained"
-                            disabled={loading || !inputMessage.trim() || !selectedCharacterId}
+                            disabled={loading || !inputMessage.trim()}
                             sx={{
                                 borderRadius: 2,
                                 minWidth: { xs: 'auto', sm: 100 },
@@ -298,7 +232,6 @@ const ChatBot = () => {
                 </Box>
             </Paper>
 
-            {/* Clear Button Below Chat */}
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                 <Button
                     variant="outlined"

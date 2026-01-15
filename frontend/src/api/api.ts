@@ -1,6 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 import {SignInData, TokenResponse, SignUpData, SessionData, ShortUserInfo} from "../auth/types";
 import {CharacterShort} from "../types/character";
+import {ChatMessageResponse} from "../types/chat";
 import { getTokens, saveTokens, clearTokens } from "./utils";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -148,10 +149,6 @@ export function getAllCharacters(): Promise<CharacterShort[]> {
 }
 
 // --- Chat ---
-
-interface chatMessageResponse {
-  response: string,
-}
 
 export function sendChatMessage(
   character_id: number,

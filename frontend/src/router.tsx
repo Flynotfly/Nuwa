@@ -3,13 +3,19 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AnonymousRoute } from "./auth/AnonymousRoute";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 
+const CharactersList = lazy(() => import('./components/CharactersList'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
 
 function createRouter() {
   return createBrowserRouter([
     {
       path: '/',
+      element: <CharactersList />,
+    },
+    {
+      path: '/chat/:id',
       element: <ChatBot />,
+    }
     // },
     // {
     //   path: '/sign-in',
@@ -32,7 +38,7 @@ function createRouter() {
     //       element: <Social />,
     //     },
     //   ]
-    },
+    // },
   ])
 }
 
