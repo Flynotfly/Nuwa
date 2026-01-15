@@ -1,5 +1,5 @@
-from rest_framework import generics
 from django.db.models import Q
+from rest_framework import generics
 
 from chat.models import Character
 from chat.serializers.character import CharacterNameSerializer

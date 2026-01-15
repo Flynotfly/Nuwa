@@ -1,25 +1,23 @@
-import time
-
-import requests
-import os
 import json
+import os
 import random
+import time
 import uuid
 
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+import requests
 from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from ollama import Client
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from chat.models import Character
 
-
 client = Client(
     host="https://ollama.com",
-    headers={"Authorization": "Bearer " + settings.OLLAMA_API_KEY}
+    headers={"Authorization": "Bearer " + settings.OLLAMA_API_KEY},
 )
 model = "qwen3-next:80b"
 
@@ -31,8 +29,7 @@ class ChatBotView(APIView):
         print(f"message: {user_message}")
         if not user_message:
             return Response(
-                {"error": "Message is required"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Message is required"}, status=status.HTTP_400_BAD_REQUEST
             )
         if not character_id:
             return Response(
@@ -52,23 +49,30 @@ class ChatBotView(APIView):
         if not isinstance(history, list):
             return Response(
                 {"error": "'history' must be a list of message objects."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
         valid_roles = {"user", "assistant"}
         for msg in history:
             if not isinstance(msg, dict):
                 return Response(
-                    {"error": "Each message in 'history' must be an object with 'role' and 'content'."},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {
+                        "error": "Each message in 'history' must be an object with 'role' and 'content'."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
             role = msg.get("role")
             content = msg.get("content")
-            if role not in valid_roles or not isinstance(content, str) or not content.strip():
+            if (
+                role not in valid_roles
+                or not isinstance(content, str)
+                or not content.strip()
+            ):
                 return Response(
                     {
                         "error": "Each history message must have a 'role' "
-                                 "('user' or 'assistant') and non-empty 'content'."},
-                    status=status.HTTP_400_BAD_REQUEST
+                        "('user' or 'assistant') and non-empty 'content'."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
         messages.extend(history)
@@ -84,30 +88,29 @@ class ChatBotView(APIView):
             response = client.chat(**payload)
             ai_response = response.message.content
             print(f"Answer: {ai_response}")
-            return Response(
-                {"response": ai_response},
-                status=status.HTTP_200_OK
-            )
+            return Response({"response": ai_response}, status=status.HTTP_200_OK)
         except requests.exceptions.RequestException as e:
             return Response(
                 {"error": "Failed to reach AI service", "detail": str(e)},
-                status=status.HTTP_502_BAD_GATEWAY
+                status=status.HTTP_502_BAD_GATEWAY,
             )
 
         except Exception as e:
             return Response(
                 {"error": "AI generation failed", "detail": str(e)},
-                status=status.HTTP_502_BAD_GATEWAY
+                status=status.HTTP_502_BAD_GATEWAY,
             )
 
 
 WEBHOOK_STORE = {}
-COMFY_WORKFLOW_PATH = os.path.join(settings.BASE_DIR, "workflows", "test_character.json")
+COMFY_WORKFLOW_PATH = os.path.join(
+    settings.BASE_DIR, "workflows", "test_character.json"
+)
 COMFY_URL = "http://127.0.0.1:8188"
 WEBHOOK_BASE_URL = "http://127.0.0.1:8000"
 
 
-@method_decorator(csrf_exempt, name='dispatch')
+@method_decorator(csrf_exempt, name="dispatch")
 class ComfyWebhookReceiver(APIView):
     def post(self, request):
         payload = request.data
@@ -149,15 +152,17 @@ class GenerateImageView(APIView):
         for _ in range(60):
             if prompt_id in WEBHOOK_STORE:
                 result = WEBHOOK_STORE.pop(prompt_id)
-                return Response({
-                    "image_base64": result["image_base64"],
-                    "filename": result["filename"],
-                }, status=status.HTTP_200_OK)
+                return Response(
+                    {
+                        "image_base64": result["image_base64"],
+                        "filename": result["filename"],
+                    },
+                    status=status.HTTP_200_OK,
+                )
             time.sleep(1)
 
         return Response(
-            {"error": "Webhook timed out"},
-            status=status.HTTP_504_GATEWAY_TIMEOUT
+            {"error": "Webhook timed out"}, status=status.HTTP_504_GATEWAY_TIMEOUT
         )
 
         # except FileNotFoundError:

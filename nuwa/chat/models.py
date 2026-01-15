@@ -1,5 +1,5 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 
 
 class Character(models.Model):
@@ -17,14 +17,14 @@ class Character(models.Model):
     is_private = models.BooleanField()
 
     class Meta:
-        indexes = [
-            models.Index(fields=["name"])
-        ]
+        indexes = [models.Index(fields=["name"])]
         ordering = ["name"]
 
     def __str__(self):
         return self.name
 
     def __repr__(self):
-        return (f"<{'Public' if not self.is_private else 'Private'}"
-                f"character {self.name} of user {self.owner}>")
+        return (
+            f"<{'Public' if not self.is_private else 'Private'}"
+            f"character {self.name} of user {self.owner}>"
+        )

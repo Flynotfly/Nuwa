@@ -1,11 +1,9 @@
-from rest_framework.test import APITestCase
-from django.urls import reverse
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-
+from django.urls import reverse
+from rest_framework.test import APITestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from chat.models import Character
-
 
 User = get_user_model()
 
@@ -35,16 +33,14 @@ class ChatBotTestCase(APITestCase):
             {
                 "message": "Hello my friend! What you did today?",
                 "character_id": self.character.pk,
-            }
+            },
         )
         self.assertEqual(response.status_code, 200)
         print(response.data["response"])
         self.assertTrue(len(response.data["response"]) > 0)
 
     def test_gen_image(self):
-        response = self.client.post(
-            get_generate_image_url()
-        )
+        response = self.client.post(get_generate_image_url())
         self.assertEqual(response.status_code, 200)
         print(response.data["image_base64"])
         print(response.data["filename"])
