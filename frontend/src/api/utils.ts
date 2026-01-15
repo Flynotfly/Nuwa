@@ -1,4 +1,4 @@
-import { TokenResponse } from "./types";
+import { TokenResponse } from "../auth/types";
 
 export const getTokens = () => {
   const access = localStorage.getItem("access");

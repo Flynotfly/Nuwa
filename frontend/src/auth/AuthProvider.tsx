@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { getSession, login as apiLogin, logout as apiLogout, refreshToken as apiRefreshToken, register as apiRegister } from '../api/api';
-import { SessionData, SignInData, SignUpData } from '../api/types';
+import { SessionData, SignInData, SignUpData } from './types';
 
 interface AuthContextType {
   user: SessionData | null;
