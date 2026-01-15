@@ -1,6 +1,7 @@
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from chat.models import Character
 
@@ -8,6 +9,10 @@ User = get_user_model()
 
 
 class CharacterTestCase(APITestCase):
+    def authenticate(self, user):
+        refresh = RefreshToken.for_user(user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+
     def setUp(self):
         login_data = {
             "username": "Bob",
@@ -18,6 +23,7 @@ class CharacterTestCase(APITestCase):
             username="John",
             password="password",
         )
+        self.authenticate(self.user)
         self.character = Character.objects.create(
             owner=self.user,
             name="Anna",
@@ -43,7 +49,6 @@ class CharacterTestCase(APITestCase):
             system_prompt="You are bot",
             is_private=True,
         )
-        self.client.login(**login_data)
 
     def test_get_list_of_characters(self):
         response = self.client.get(get_list_url())
