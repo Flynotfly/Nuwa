@@ -15,6 +15,8 @@ class Character(models.Model):
         null=True,
     )
     is_private = models.BooleanField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [models.Index(fields=["name"])]
