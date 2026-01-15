@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from "axios";
-import {SignInData, TokenResponse, SignUpData, SessionData, ShortUserInfo} from "./types";
+import {SignInData, TokenResponse, SignUpData, SessionData, ShortUserInfo} from "../auth/types";
+import {CharacterShort} from "../types/character";
 import { getTokens, saveTokens, clearTokens } from "./utils";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -17,6 +18,9 @@ const URLs = Object.freeze({
   REGISTER: '/user/register',
   SESSION: '/user/session',
   REFRESH: '/user/refresh',
+
+  CHARACTER: '/characters',
+  CHAT: '/chat',
 })
 
 let isRefreshing = false;
@@ -136,4 +140,25 @@ export function getSession(): Promise<SessionData> {
   });
 }
 
+// --- Character ---
 
+export function getAllCharacters(): Promise<CharacterShort[]> {
+  return api.get(URLs.CHARACTER)
+    .then((response) => response.data)
+}
+
+// --- Chat ---
+
+interface chatMessageResponse {
+  response: string,
+}
+
+export function sendChatMessage(
+  character_id: number,
+  message: string
+): Promise<chatMessageResponse> {
+  return api.post(URLs.CHAT, {
+    message,
+    character_id,
+  }).then((response) => response.data)
+}
