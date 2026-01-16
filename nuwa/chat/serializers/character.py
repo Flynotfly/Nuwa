@@ -7,3 +7,5 @@ class CharacterNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = Character
         fields = ["id", "name"]
+        fields = ["id", "name", "description"]
+
