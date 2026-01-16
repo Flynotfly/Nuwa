@@ -10,13 +10,14 @@ class CharacterNameSerializer(serializers.ModelSerializer):
 
 
 class CharacterFullSerializer(serializers.ModelSerializer):
-    owner = serializers.CharField(source="owner.username", read_only=True)
+    owner_username = serializers.CharField(source="owner.username", read_only=True)
 
     class Meta:
         model = Character
         fields = [
             "id",
             "owner",
+            "owner_username",
             "name",
             "description",
             "system_prompt",
@@ -26,6 +27,13 @@ class CharacterFullSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if instance.is_hidden_prompt:
+        request = self.context.get("request")
+        if (
+            instance.is_hidden_prompt
+            and request
+            and hasattr(request, "user")
+            and request.user.is_authenticated
+            and instance.owner != request.user
+        ):
             data["system_prompt"] = ""
         return data
