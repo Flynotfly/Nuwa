@@ -14,6 +14,13 @@ class CharaterListView(generics.ListAPIView):
         return Character.objects.filter(is_private=False)
 
 
+class CharacterCreateView(generics.CreateAPIView):
+    serializer_class = CharacterFullSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
 class CharacterRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CharacterFullSerializer
 
