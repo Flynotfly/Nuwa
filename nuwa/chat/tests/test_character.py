@@ -59,4 +59,4 @@ class CharacterTestCase(APITestCase):
 
 
 def get_list_url():
-    return reverse("chat:characters-list")
+    return reverse("chat:characters-list-create")
