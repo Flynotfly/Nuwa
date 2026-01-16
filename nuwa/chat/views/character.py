@@ -1,9 +1,10 @@
-from rest_framework import generics
 from django.db.models import Q
+from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from chat.models import Character
-from chat.serializers.character import CharacterNameSerializer, CharacterFullSerializer
+from chat.serializers.character import (CharacterFullSerializer,
+                                        CharacterNameSerializer)
 
 
 class CharaterListCreateView(generics.ListCreateAPIView):
