@@ -15,6 +15,7 @@ class Character(models.Model):
         null=True,
     )
     is_private = models.BooleanField()
+    is_hidden_prompt = models.BooleanField()
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(auto_now=True)
 
