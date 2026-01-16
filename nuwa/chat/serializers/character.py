@@ -24,6 +24,7 @@ class CharacterFullSerializer(serializers.ModelSerializer):
             "is_private",
             "is_hidden_prompt",
         ]
+        read_only_fields = ["id", "owner"]
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
