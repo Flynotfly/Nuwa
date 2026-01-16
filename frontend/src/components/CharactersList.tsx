@@ -12,6 +12,12 @@ import {
 import { getAllCharacters } from '../api/api';
 import { CharacterShort } from '../types/character';
 
+// Helper to truncate text
+const truncate = (str: string, maxLength: number): string => {
+  if (str.length <= maxLength) return str;
+  return str.substring(0, maxLength).trimEnd() + '…';
+};
+
 const CharactersList = () => {
   const [characters, setCharacters] = useState<CharacterShort[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +69,27 @@ const CharactersList = () => {
                   justifyContent: 'space-between',
                 }}
               >
-                <Typography variant="h6">{char.name}</Typography>
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    {char.name}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      minHeight: 48, // ensures consistent card height
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {char.description && char.description.trim() !== ''
+                      ? truncate(char.description, 100)
+                      : 'No description available.'}
+                  </Typography>
+                </Box>
                 <Button
                   component={Link}
                   to={`/chat/${char.id}`}

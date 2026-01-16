@@ -5,40 +5,34 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 
 const CharactersList = lazy(() => import('./components/CharactersList'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
+const SignIn = lazy(() => import('./components/SignIn'));
+const SignUp = lazy(() => import('./components/SignUp'));
+const Layout = lazy(() => import('./components/Layout'));
 
 function createRouter() {
   return createBrowserRouter([
     {
       path: '/',
-      element: <CharactersList />,
+      element: <Layout />,
+      children: [
+        {
+          index: true,
+          element: <CharactersList />,
+        },
+        {
+          path: '/chat/:id',
+          element: <ProtectedRoute><ChatBot /></ProtectedRoute>,
+        },
+      ]
     },
     {
-      path: '/chat/:id',
-      element: <ChatBot />,
-    }
-    // },
-    // {
-    //   path: '/sign-in',
-    //   element: <AnonymousRoute><SignIn /></AnonymousRoute>,
-    // },
-    // {
-    //   path: '/sign-up',
-    //   element: <AnonymousRoute><SignUp /></AnonymousRoute>,
-    // },
-    // {
-    //   path: '/app',
-    //   element: <ProtectedRoute><Layout /></ProtectedRoute>,
-    //   children: [
-    //     {
-    //       index: true,
-    //       element: <Dashboard />,
-    //     },
-    //     {
-    //       path: '/social',
-    //       element: <Social />,
-    //     },
-    //   ]
-    // },
+      path: '/sign-in',
+      element: <AnonymousRoute><SignIn /></AnonymousRoute>,
+    },
+    {
+      path: '/sign-up',
+      element: <AnonymousRoute><SignUp /></AnonymousRoute>,
+    },
   ])
 }
 
