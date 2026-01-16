@@ -14,8 +14,8 @@ class CharaterListCreateView(generics.ListCreateAPIView):
 
     def get_permissions(self):
         if self.request.method == "POST":
-            return [IsAuthenticated]
-        return [AllowAny]
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
     def get_queryset(self):
         return Character.objects.filter(is_private=False)
