@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import random
@@ -102,32 +103,10 @@ class ChatBotView(APIView):
             )
 
 
-WEBHOOK_STORE = {}
 COMFY_WORKFLOW_PATH = os.path.join(
     settings.BASE_DIR, "workflows", "test_character.json"
 )
 COMFY_URL = "http://127.0.0.1:8188"
-WEBHOOK_BASE_URL = "http://127.0.0.1:8000"
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class ComfyWebhookReceiver(APIView):
-    def post(self, request):
-        payload = request.data
-        print(f"received: {payload}")
-        prompt_id = payload.get("id")
-        images = payload.get("images", [])
-        filenames = payload.get("filenames", [])
-
-        if prompt_id and images:
-            # Store first base64 image
-            WEBHOOK_STORE[prompt_id] = {
-                "image_base64": images[0],
-                "filename": filenames[0],
-                "received": True,
-            }
-            return Response({"status": "ok"}, status=200)
-        return Response({"error": "Invalid payload"}, status=400)
 
 
 class GenerateImageView(APIView):
@@ -136,33 +115,72 @@ class GenerateImageView(APIView):
             workflow = json.load(f)
         seed = random.randint(0, 999_999_999_999_999)
         workflow["3"]["inputs"]["seed"] = seed
-        prompt_id = str(uuid.uuid4())
         payload = {
-            "id": prompt_id,
             "prompt": workflow,
-            "webhook_v2": f"{WEBHOOK_BASE_URL}/comfy-webhook",
         }
         response = requests.post(
-            f"{COMFY_URL}/prompt",
+            f"{COMFY_URL}/api/prompt",
             json=payload,
             timeout=15,
         )
         response.raise_for_status()
+        response_data = response.json()
+        prompt_id = response_data["prompt_id"]
+        print(f"Prompt submitted. ID: {prompt_id}")
 
-        for _ in range(60):
-            if prompt_id in WEBHOOK_STORE:
-                result = WEBHOOK_STORE.pop(prompt_id)
-                return Response(
-                    {
-                        "image_base64": result["image_base64"],
-                        "filename": result["filename"],
-                    },
-                    status=status.HTTP_200_OK,
-                )
-            time.sleep(1)
+        max_retries = 60
+        retry_interval = 1
+
+        for _ in range(max_retries):
+            try:
+                history_resp = requests.get(f"{COMFY_URL}/api/history/{prompt_id}", timeout=5)
+                history_resp.raise_for_status()
+                history = history_resp.json()
+
+                if prompt_id in history:
+                    prompt_data = history[prompt_id]
+                    outputs = prompt_data.get("outputs", {})
+
+                    # Look for SaveImage node output (node "9" in your case)
+                    if "9" in outputs and "images" in outputs["9"]:
+                        image_info = outputs["9"]["images"][0]
+                        filename = image_info["filename"]
+                        subfolder = image_info.get("subfolder", "")
+                        type_ = image_info.get("type", "output")
+
+                        # Fetch the actual image
+                        img_resp = requests.get(
+                            f"{COMFY_URL}/view",
+                            params={
+                                "filename": filename,
+                                "type": type_,
+                                "subfolder": subfolder,
+                            },
+                            timeout=10,
+                        )
+                        img_resp.raise_for_status()
+
+                        image_base64 = base64.b64encode(img_resp.content).decode("utf-8")
+
+                        return Response({
+                            "image_base64": image_base64,
+                            "filename": filename,
+                        }, status=status.HTTP_200_OK)
+
+                    else:
+                        return Response(
+                            {"error": "Workflow completed but no image found in outputs"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        )
+
+            except requests.RequestException as e:
+                pass
+
+            time.sleep(retry_interval)
 
         return Response(
-            {"error": "Webhook timed out"}, status=status.HTTP_504_GATEWAY_TIMEOUT
+            {"error": "ComfyUI generation timed out"},
+            status=status.HTTP_504_GATEWAY_TIMEOUT,
         )
 
         # except FileNotFoundError:
