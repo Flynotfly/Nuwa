@@ -59,13 +59,14 @@ class Chat(models.Model):
 
     last_message = models.ForeignKey(
         "Message",
+        related_name="+",
         on_delete=models.SET_NULL,
         blank=True,
         null=True,
     )
     last_message_text = models.TextField()
     last_message_datetime = models.DateTimeField(blank=True, null=True)
-    structure = models.JSONField(default=[])
+    structure = models.JSONField(default=list)
 
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(auto_now=True)
@@ -117,7 +118,7 @@ class Message(models.Model):
         blank=True,
         null=True,
     )
-    media_path = models.FilePathField(
+    media_path = models.FileField(
         upload_to=chat_media_upload_path,
         blank=True,
         null=True,
