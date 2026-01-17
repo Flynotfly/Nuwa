@@ -133,7 +133,9 @@ class GenerateImageView(APIView):
 
         for _ in range(max_retries):
             try:
-                history_resp = requests.get(f"{COMFY_URL}/api/history/{prompt_id}", timeout=5)
+                history_resp = requests.get(
+                    f"{COMFY_URL}/api/history/{prompt_id}", timeout=5
+                )
                 history_resp.raise_for_status()
                 history = history_resp.json()
 
@@ -160,16 +162,23 @@ class GenerateImageView(APIView):
                         )
                         img_resp.raise_for_status()
 
-                        image_base64 = base64.b64encode(img_resp.content).decode("utf-8")
+                        image_base64 = base64.b64encode(img_resp.content).decode(
+                            "utf-8"
+                        )
 
-                        return Response({
-                            "image_base64": image_base64,
-                            "filename": filename,
-                        }, status=status.HTTP_200_OK)
+                        return Response(
+                            {
+                                "image_base64": image_base64,
+                                "filename": filename,
+                            },
+                            status=status.HTTP_200_OK,
+                        )
 
                     else:
                         return Response(
-                            {"error": "Workflow completed but no image found in outputs"},
+                            {
+                                "error": "Workflow completed but no image found in outputs"
+                            },
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         )
 
