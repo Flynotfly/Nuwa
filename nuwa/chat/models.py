@@ -1,3 +1,5 @@
+import os
+
 from django.conf import settings
 from django.db import models
 
@@ -17,6 +19,7 @@ class Character(models.Model):
     is_private = models.BooleanField()
     is_hidden_prompt = models.BooleanField()
     is_active = models.BooleanField(default=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(auto_now=True)
 
@@ -33,15 +36,103 @@ class Character(models.Model):
             f"character {self.name} of user {self.owner}>"
         )
 
-#
-# class Chat(models.Model):
-#     owner = models.ForeignKey(
-#         settings.AUTH_USER_MODEL,
-#         related_name="characters",
-#         on_delete=models.CASCADE,
-#     )
-#     character = models.ForeignKey(
-#         Character,
-#         related_name="chats",
-#         on_delete=models.CASCADE,
-#     )
+
+class Chat(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="chats",
+        on_delete=models.CASCADE,
+    )
+    character = models.ForeignKey(
+        Character,
+        related_name="chats",
+        on_delete=models.CASCADE,
+    )
+    character_name = models.CharField(max_length=50)
+    system_prompt = models.TextField()
+    description = models.TextField(
+        blank=True,
+        null=True,
+    )
+    is_hidden_prompt = models.BooleanField()
+    is_active = models.BooleanField(default=True)
+
+    last_message = models.ForeignKey(
+        "Message",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+    last_message_text = models.TextField()
+    last_message_datetime = models.DateTimeField(blank=True, null=True)
+    structure = models.JSONField(default=[])
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["-last_message_datetime"]),
+            models.Index(fields=["owner", "-last_message_datetime"]),
+        ]
+        ordering = ["-last_message_datetime"]
+
+    def __repr__(self):
+        return (
+            f"<Chat of user {self.owner.pk} and character "
+            f"{self.character.pk} {self.character_name}"
+        )
+
+
+def chat_media_upload_path(instance, filename):
+    return f"chat_media/user_{instance.owner.id}/chat_{instance.chat.id}/{filename}"
+
+
+class Message(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="messages",
+        on_delete=models.CASCADE,
+    )
+    chat = models.ForeignKey(
+        Chat,
+        related_name="messages",
+        on_delete=models.CASCADE,
+    )
+    ROLE_CHOICES = {"user": "user", "assistant": "assistant"}
+    role = models.CharField(
+        max_length=9,
+        choices=ROLE_CHOICES,
+    )
+    MEDIA_TYPE_CHOICES = {
+        "text": "text",
+        "image": "image",
+        "video": "video",
+    }
+    media_type = models.CharField(
+        max_length=5,
+        choices=MEDIA_TYPE_CHOICES,
+    )
+    message = models.TextField(
+        blank=True,
+        null=True,
+    )
+    media_path = models.FilePathField(
+        upload_to=chat_media_upload_path,
+        blank=True,
+        null=True,
+    )
+    conducted = models.DateTimeField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["chat", "-conducted"])]
+        ordering = ["-conducted"]
+
+    def __repr__(self):
+        return (
+            f"<Message of user {self.owner.pk} in chat "
+            f"{self.chat.pk} at {self.conducted}"
+        )
