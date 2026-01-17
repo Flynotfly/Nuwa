@@ -124,6 +124,7 @@ class Message(models.Model):
         null=True,
     )
     conducted = models.DateTimeField()
+    history = models.JSONField(default=list)
 
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(auto_now=True)
