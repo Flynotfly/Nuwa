@@ -1,4 +1,10 @@
 def update_chat_structure(structure, current_id, new_id, path):
+    if current_id:
+        current_id = int(current_id)
+    new_id = int(new_id)
+    if len(path) >= 1 and path[-1] == current_id:
+        path = path[:-1]
+    # print(f"{structure=}, {current_id=}, {new_id=}, {path=}")
     if current_id is None:
         structure = [new_id]
         return structure
