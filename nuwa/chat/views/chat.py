@@ -6,6 +6,7 @@ import time
 import uuid
 
 import requests
+from django.utils import timezone
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -14,7 +15,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from chat.models import Character
+from chat.models import Character, Message, Chat
 
 client = Client(
     host="https://ollama.com",
@@ -26,59 +27,70 @@ model = "qwen3-next:80b"
 class ChatBotView(APIView):
     def post(self, request):
         user_message = request.data.get("message")
-        character_id = request.data.get("character_id")
-        print(f"message: {user_message}")
+        chat_id = request.data.get("chat_id")
+        previous_message_id = request.data.get("previous_message_id", None)
+
+        print(f"User message: {user_message}")
         if not user_message:
             return Response(
                 {"error": "Message is required"}, status=status.HTTP_400_BAD_REQUEST
             )
-        if not character_id:
+        if not chat_id:
             return Response(
-                {"error": "Character_id is required"},
+                {"error": "chat_id is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        character = Character.objects.filter(pk=character_id).first()
-        if not character:
+
+        user_message = user_message.strip()
+
+        chat = Chat.objects.filter(
+            pk=chat_id,
+            owner=self.request.user
+        ).first()
+        if not chat:
             return Response(
-                {"error": "Character id is invalid"},
+                {"error": "Chat id is invalid"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        system_prompt = character.system_prompt
+
+        system_prompt = chat.system_prompt
         messages = [{"role": "system", "content": system_prompt}]
 
-        history = request.data.get("history", [])
-        if not isinstance(history, list):
-            return Response(
-                {"error": "'history' must be a list of message objects."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        valid_roles = {"user", "assistant"}
-        for msg in history:
-            if not isinstance(msg, dict):
+        if previous_message_id:
+            previous_message = Message.objects.filter(
+                pk=previous_message_id,
+                owner=self.request.user,
+                chat=chat,
+            ).first()
+            if not previous_message:
                 return Response(
-                    {
-                        "error": "Each message in 'history' must be an object with 'role' and 'content'."
-                    },
+                    {"error": "Previous_message_id is invalid"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            role = msg.get("role")
-            content = msg.get("content")
-            if (
-                role not in valid_roles
-                or not isinstance(content, str)
-                or not content.strip()
-            ):
-                return Response(
-                    {
-                        "error": "Each history message must have a 'role' "
-                        "('user' or 'assistant') and non-empty 'content'."
-                    },
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            message_history_ids = previous_message.history
+            all_message_ids = list(message_history_ids) + [previous_message.pk]
+            history = Message.objects.filter(
+                owner=self.request.user,
+                pk__in=all_message_ids,
+                chat=chat,
+            ).order_by("-conducted")[:30]
+            history = reversed(list(history))
+            for message in history:
+                if message.media_type != "text":
+                    continue
+                messages.append({"role": message.role, "content": message.message})
 
-        messages.extend(history)
-        messages.append({"role": "user", "content": user_message.strip()})
-
+        messages.append({"role": "user", "content": user_message})
+        message_history = [] if not previous_message_id else all_message_ids
+        user_message = Message.objects.create(
+            owner=self.request.user,
+            chat=chat,
+            role="user",
+            media_type="text",
+            message=user_message,
+            conducted=timezone.now(),
+            history=message_history
+        )
         payload = {
             "model": model,
             "messages": messages,
@@ -88,19 +100,33 @@ class ChatBotView(APIView):
         try:
             response = client.chat(**payload)
             ai_response = response.message.content
-            print(f"Answer: {ai_response}")
-            return Response({"response": ai_response}, status=status.HTTP_200_OK)
         except requests.exceptions.RequestException as e:
             return Response(
                 {"error": "Failed to reach AI service", "detail": str(e)},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
-
         except Exception as e:
             return Response(
                 {"error": "AI generation failed", "detail": str(e)},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
+
+        ai_response = ai_response.strip()
+        print(f"Answer: {ai_response}")
+        message_history.append(user_message.pk)
+        ai_message = Message.objects.create(
+            owner=self.request.user,
+            chat=chat,
+            role="assistant",
+            media_type="text",
+            message=ai_response,
+            conducted=timezone.now(),
+            history=message_history,
+        )
+        return Response({
+            "response": ai_response,
+            "message_id": ai_message.pk,
+        }, status=status.HTTP_200_OK)
 
 
 COMFY_WORKFLOW_PATH = os.path.join(
