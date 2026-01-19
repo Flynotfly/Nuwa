@@ -91,6 +91,9 @@ class ChatBotView(APIView):
             conducted=timezone.now(),
             history=message_history
         )
+        chat.last_message = user_message
+        chat.last_message_text = user_message.message
+        chat.last_message_datetime = user_message.conducted
         payload = {
             "model": model,
             "messages": messages,
@@ -123,6 +126,9 @@ class ChatBotView(APIView):
             conducted=timezone.now(),
             history=message_history,
         )
+        chat.last_message = ai_message
+        chat.last_message_text = ai_message.message
+        chat.last_message_datetime = ai_message.conducted
         return Response({
             "response": ai_response,
             "message_id": ai_message.pk,
