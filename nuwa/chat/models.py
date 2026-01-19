@@ -64,7 +64,7 @@ class Chat(models.Model):
         blank=True,
         null=True,
     )
-    last_message_text = models.TextField()
+    last_message_text = models.TextField(blank=True, null=True)
     last_message_datetime = models.DateTimeField(blank=True, null=True)
     structure = models.JSONField(default=list)
 
