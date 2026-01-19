@@ -130,7 +130,10 @@ class Message(models.Model):
     edited_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        indexes = [models.Index(fields=["chat", "-conducted"])]
+        indexes = [
+            models.Index(fields=["chat", "-conducted"]),
+            models.Index(fields=["owner", "chat", "-conducted"]),
+        ]
         ordering = ["-conducted"]
 
     def __repr__(self):
