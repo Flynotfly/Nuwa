@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chat.models import Character, Message, Chat
+from chat.utils import update_chat_structure
 
 client = Client(
     host="https://ollama.com",
@@ -91,9 +92,16 @@ class ChatBotView(APIView):
             conducted=timezone.now(),
             history=message_history
         )
+        chat.structure = update_chat_structure(
+            chat.structure,
+            previous_message_id if previous_message_id else None,
+            user_message.pk,
+            user_message.history,
+        )
         chat.last_message = user_message
         chat.last_message_text = user_message.message
         chat.last_message_datetime = user_message.conducted
+        chat.save()
         payload = {
             "model": model,
             "messages": messages,
@@ -116,7 +124,7 @@ class ChatBotView(APIView):
 
         ai_response = ai_response.strip()
         print(f"Answer: {ai_response}")
-        message_history.append(user_message.pk)
+        ai_history = message_history + [user_message.pk]
         ai_message = Message.objects.create(
             owner=self.request.user,
             chat=chat,
@@ -124,11 +132,18 @@ class ChatBotView(APIView):
             media_type="text",
             message=ai_response,
             conducted=timezone.now(),
-            history=message_history,
+            history=ai_history,
         )
         chat.last_message = ai_message
         chat.last_message_text = ai_message.message
         chat.last_message_datetime = ai_message.conducted
+        chat.structure = update_chat_structure(
+            chat.structure,
+            user_message.pk,
+            ai_message.pk,
+            ai_message.history,
+        )
+        chat.save()
         return Response({
             "response": ai_response,
             "message_id": ai_message.pk,

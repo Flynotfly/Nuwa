@@ -63,6 +63,7 @@ Always respond as if you’re fully present, emotionally invested, and turned on
             },
         )
         self.assertEqual(response.status_code, 200)
+
         self.assertTrue(len(response.data["response"]) > 0)
         self.assertTrue(response.data["message_id"])
 
