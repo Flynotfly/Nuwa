@@ -10,6 +10,11 @@ class UpdateChatStructureTestCase(TestCase):
         result = update_chat_structure(structure, current_id=None, new_id=1, path=[])
         self.assertEqual(result, [1])
 
+    def test_simple(self):
+        structure = [0]
+        result = update_chat_structure(structure, current_id=0, new_id=1, path=[0])
+        self.assertEqual(result, [0, 1])
+
     def test_append_to_root_level(self):
         """Append a reply to a root-level message that has no replies yet."""
         structure = [1, 2]
