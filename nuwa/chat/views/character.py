@@ -5,8 +5,7 @@ from rest_framework.response import Response
 
 from chat.models import Character
 from chat.permissions import IsOwnerOrReadOnly
-from chat.serializers.character import (CharacterFullSerializer,
-                                        CharacterNameSerializer)
+from chat.serializers.character import CharacterFullSerializer, CharacterNameSerializer
 
 
 class CharaterListCreateView(generics.ListCreateAPIView):

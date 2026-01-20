@@ -2,8 +2,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path
 
-from .views.character import (CharacterRetrieveUpdateDestroyView,
-                              CharaterListCreateView)
+from .views.character import CharacterRetrieveUpdateDestroyView, CharaterListCreateView
 from .views.chat import ChatBotView, GenerateImageView
 
 app_name = "chat"
