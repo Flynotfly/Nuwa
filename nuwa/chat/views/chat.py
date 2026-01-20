@@ -14,15 +14,22 @@ from ollama import Client
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from openai import OpenAI
 
 from chat.models import Character, Message, Chat
 from chat.utils import update_chat_structure
 
-client = Client(
-    host="https://ollama.com",
-    headers={"Authorization": "Bearer " + settings.OLLAMA_API_KEY},
+# client = Client(
+#     host="https://ollama.com",
+#     headers={"Authorization": "Bearer " + settings.OLLAMA_API_KEY},
+# )
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=settings.OPENROUTER_KEY,
 )
-model = "qwen3-next:80b"
+# model = "qwen3-next:80b"
+model = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
 
 
 class ChatBotView(APIView):
@@ -109,8 +116,13 @@ class ChatBotView(APIView):
             "think": "low",
         }
         try:
-            response = client.chat(**payload)
-            ai_response = response.message.content
+            # response = client.chat(**payload)
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages
+            )
+            # ai_response = response.message.content
+            ai_response = response.choices[0].message.content
         except requests.exceptions.RequestException as e:
             return Response(
                 {"error": "Failed to reach AI service", "detail": str(e)},
