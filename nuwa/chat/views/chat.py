@@ -6,17 +6,17 @@ import time
 import uuid
 
 import requests
-from django.utils import timezone
 from django.conf import settings
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from ollama import Client
+from openai import OpenAI
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from openai import OpenAI
 
-from chat.models import Character, Message, Chat
+from chat.models import Character, Chat, Message
 from chat.utils import update_chat_structure
 
 # client = Client(
@@ -51,10 +51,7 @@ class ChatBotView(APIView):
 
         user_message = user_message.strip()
 
-        chat = Chat.objects.filter(
-            pk=chat_id,
-            owner=self.request.user
-        ).first()
+        chat = Chat.objects.filter(pk=chat_id, owner=self.request.user).first()
         if not chat:
             return Response(
                 {"error": "Chat id is invalid"},
@@ -97,7 +94,7 @@ class ChatBotView(APIView):
             media_type="text",
             message=user_message,
             conducted=timezone.now(),
-            history=message_history
+            history=message_history,
         )
         chat.structure = update_chat_structure(
             chat.structure,
@@ -117,10 +114,7 @@ class ChatBotView(APIView):
         }
         try:
             # response = client.chat(**payload)
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages
-            )
+            response = client.chat.completions.create(model=model, messages=messages)
             # ai_response = response.message.content
             ai_response = response.choices[0].message.content
         except requests.exceptions.RequestException as e:
@@ -156,10 +150,13 @@ class ChatBotView(APIView):
             ai_message.history,
         )
         chat.save()
-        return Response({
-            "response": ai_response,
-            "message_id": ai_message.pk,
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "response": ai_response,
+                "message_id": ai_message.pk,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 COMFY_WORKFLOW_PATH = os.path.join(

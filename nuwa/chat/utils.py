@@ -16,16 +16,16 @@ def update_chat_structure(structure, current_id, new_id, path):
         # print(f"{item=}, {i=}, {j=}")
         if not isinstance(item, list):
             if item == current_id:
-                if j+1 == len(current_list):
+                if j + 1 == len(current_list):
                     current_list.append(new_id)
                     return structure
-                elif isinstance(current_list[j+1], list):
-                    current_list = current_list[j+1]
+                elif isinstance(current_list[j + 1], list):
+                    current_list = current_list[j + 1]
                     current_list.append([new_id])
                     return structure
                 else:
-                    cutted = current_list[j+1:]
-                    del current_list[j+1:]
+                    cutted = current_list[j + 1 :]
+                    del current_list[j + 1 :]
                     current_list.append(list())
                     current_list[-1].append(cutted)
                     current_list[-1].append([new_id])
@@ -35,7 +35,9 @@ def update_chat_structure(structure, current_id, new_id, path):
                 j += 1
                 continue
             else:
-                raise ValueError(f"Cann't update chat structure, path value is {path[i]}, item is {item}")
+                raise ValueError(
+                    f"Cann't update chat structure, path value is {path[i]}, item is {item}"
+                )
         else:
             current_list = item
             element_to_find = current_id if i == len(path) else path[i]
@@ -49,16 +51,16 @@ def update_chat_structure(structure, current_id, new_id, path):
                 raise ValueError("Cann't update chat structure")
             j = 0
             if current_list[0] == current_id:
-                if j+1 == len(current_list):
+                if j + 1 == len(current_list):
                     current_list.append(new_id)
                     return structure
-                elif isinstance(current_list[j+1], list):
-                    current_list = current_list[j+1]
+                elif isinstance(current_list[j + 1], list):
+                    current_list = current_list[j + 1]
                     current_list.append([new_id])
                     return structure
                 else:
-                    cutted = current_list[j-1:]
-                    del current_list[j+1:]
+                    cutted = current_list[j - 1 :]
+                    del current_list[j + 1 :]
                     current_list.append(list())
                     current_list[-1].append(cutted)
                     current_list[-1].append([new_id])

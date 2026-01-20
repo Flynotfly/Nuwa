@@ -46,15 +46,15 @@ class UpdateChatStructureTestCase(TestCase):
 
     def test_complex(self):
         structure = [0, 1, 2, [[3, 4, 7], [5, 6, [[11, 12], [13, 14]]], [8, 9, 10]]]
-        result = update_chat_structure(structure, current_id=13, new_id=15, path=[0, 1, 2, 5, 6])
-        self.assertEqual(result, [0, 1, 2, [[3, 4, 7], [5, 6, [[11, 12], [13, [[14], [15]]]]], [8, 9, 10]]])
+        result = update_chat_structure(
+            structure, current_id=13, new_id=15, path=[0, 1, 2, 5, 6]
+        )
+        self.assertEqual(
+            result,
+            [0, 1, 2, [[3, 4, 7], [5, 6, [[11, 12], [13, [[14], [15]]]]], [8, 9, 10]]],
+        )
 
     def test_comples_2(self):
-        structure = [
-            0, 1, [
-                [2, 4, 5, 6],
-                [3, 7, 8, 9]
-            ]
-        ]
+        structure = [0, 1, [[2, 4, 5, 6], [3, 7, 8, 9]]]
         result = update_chat_structure(structure, current_id=1, new_id=10, path=[0])
         self.assertEqual(result, [0, 1, [[2, 4, 5, 6], [3, 7, 8, 9], [10]]])
