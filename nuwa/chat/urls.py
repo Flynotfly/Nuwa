@@ -8,6 +8,7 @@ from chat.views.character import (
 )
 from chat.views.chat import ChatListCreateView, ChatRetrieveDestroyView
 from chat.views.chatting import ChatBotView, GenerateImageView
+from chat.views.message import MessageListView
 
 app_name = "chat"
 
@@ -23,6 +24,7 @@ urlpatterns = [
     ),
     path("chats", ChatListCreateView.as_view(), name="chats-list-create"),
     path("chats/<int:pk>", ChatRetrieveDestroyView.as_view(), name="chats-detail"),
+    path("chats/<int:chat_id>/messages", MessageListView.as_view(), name="messages"),
 ]
 
 if settings.DEBUG:
