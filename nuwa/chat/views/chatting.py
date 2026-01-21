@@ -15,6 +15,7 @@ from rest_framework.views import APIView
 
 from chat.models import Chat, Message
 from chat.utils import update_chat_structure
+from chat.serializers.message import MessageSerializer
 
 # client = Client(
 #     host="https://ollama.com",
@@ -103,12 +104,6 @@ class ChatBotView(APIView):
         chat.last_message_text = user_message.message
         chat.last_message_datetime = user_message.conducted
         chat.save()
-        payload = {
-            "model": model,
-            "messages": messages,
-            "stream": False,
-            "think": "low",
-        }
         try:
             # response = client.chat(**payload)
             response = client.chat.completions.create(model=model, messages=messages)
@@ -147,11 +142,9 @@ class ChatBotView(APIView):
             ai_message.history,
         )
         chat.save()
+        serializer = MessageSerializer(ai_message)
         return Response(
-            {
-                "response": ai_response,
-                "message_id": ai_message.pk,
-            },
+            serializer.data,
             status=status.HTTP_200_OK,
         )
 
