@@ -18,6 +18,8 @@ urlpatterns = [
         CharacterRetrieveUpdateDestroyView.as_view(),
         name="characters-detail",
     ),
+    path("chats", ChatListCreateView.as_view(), name="chats-list-create"),
+    path("chats/<int:pk>", ChatRetrieveDestroyView.as_view(), name="chats-detail"),
 ]
 
 if settings.DEBUG:
