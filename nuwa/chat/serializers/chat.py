@@ -54,6 +54,7 @@ class ChatDetailSerializer(serializers.ModelSerializer):
             "description",
             "is_hidden_prompt",
             "structure",
+            "last_message",
         ]
         read_only_fields = fields
 
