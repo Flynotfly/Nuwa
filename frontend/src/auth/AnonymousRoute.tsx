@@ -11,7 +11,7 @@ export const AnonymousRoute: React.FC<{ children: ReactNode }> = ({ children }) 
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/app" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
