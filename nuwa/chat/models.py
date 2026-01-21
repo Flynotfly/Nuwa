@@ -118,7 +118,7 @@ class Message(models.Model):
         blank=True,
         null=True,
     )
-    media_path = models.FileField(
+    media = models.FileField(
         upload_to=chat_media_upload_path,
         blank=True,
         null=True,
