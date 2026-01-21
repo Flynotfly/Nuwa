@@ -8,8 +8,6 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = [
             "id",
-            "owner",
-            "chat",
             "role",
             "media_type",
             "message",
@@ -17,4 +15,3 @@ class MessageSerializer(serializers.ModelSerializer):
             "conducted",
             "history",
         ]
-        read_only_fields = ["id", "owner", "chat"]
