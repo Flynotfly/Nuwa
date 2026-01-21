@@ -123,6 +123,7 @@ class Message(models.Model):
         blank=True,
         null=True,
     )
+    is_active = models.BooleanField(default=True)
     conducted = models.DateTimeField()
     history = models.JSONField(default=list)
 
