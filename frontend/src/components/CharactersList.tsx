@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // 👈 Add this
 import {
   Box,
   Typography,
@@ -8,9 +8,12 @@ import {
   Alert,
   Grid,
   Button,
+  Snackbar,
 } from '@mui/material';
 import { getAllCharacters } from '../api/api';
+import { createChat } from '../api/api'; //
 import { CharacterShort } from '../types/character';
+import { useAuth } from '../auth/AuthProvider'; //
 
 // Helper to truncate text
 const truncate = (str: string, maxLength: number): string => {
@@ -22,6 +25,9 @@ const CharactersList = () => {
   const [characters, setCharacters] = useState<CharacterShort[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getAllCharacters()
@@ -29,6 +35,23 @@ const CharactersList = () => {
       .catch((err) => setError('Failed to load characters'))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleChatClick = async (characterId: number) => {
+    if (!isAuthenticated) {
+      setSnackbarOpen(true);
+      return;
+    }
+
+    try {
+      const chat = await createChat(characterId);
+      navigate(`/chat/${chat.id}`);
+    } catch (err) {
+      console.error('Failed to create chat:', err);
+      setError('Could not start chat. Please try again.');
+    }
+  };
+
+  const handleSnackbarClose = () => setSnackbarOpen(false);
 
   if (loading) {
     return (
@@ -77,7 +100,7 @@ const CharactersList = () => {
                     variant="body2"
                     color="text.secondary"
                     sx={{
-                      minHeight: 48, // ensures consistent card height
+                      minHeight: 48,
                       overflow: 'hidden',
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
@@ -91,11 +114,10 @@ const CharactersList = () => {
                   </Typography>
                 </Box>
                 <Button
-                  component={Link}
-                  to={`/chat/${char.id}`}
                   variant="contained"
                   color="primary"
                   sx={{ mt: 2 }}
+                  onClick={() => handleChatClick(char.id)} // 👈 Not a Link!
                 >
                   Chat Now
                 </Button>
@@ -104,6 +126,13 @@ const CharactersList = () => {
           ))}
         </Grid>
       )}
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        message="Please log in to start a chat."
+      />
     </Box>
   );
 };

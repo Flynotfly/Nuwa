@@ -1,8 +1,10 @@
 import axios, { AxiosResponse } from "axios";
 import {SignInData, TokenResponse, SignUpData, SessionData, ShortUserInfo} from "../auth/types";
 import {CharacterShort} from "../types/character";
-import {ChatMessageResponse} from "../types/chat";
+import {ChatMessageResponse} from "../types/chatting";
 import { getTokens, saveTokens, clearTokens } from "./utils";
+import {ChatDetail, ChatListElement} from "../types/chat";
+import dayjs from 'dayjs';
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -21,7 +23,8 @@ const URLs = Object.freeze({
   REFRESH: '/user/refresh',
 
   CHARACTER: '/characters',
-  CHAT: '/chat',
+  CHAT: '/chats',
+  CHATTING: '/chat',
 })
 
 let isRefreshing = false;
@@ -150,12 +153,36 @@ export function getAllCharacters(): Promise<CharacterShort[]> {
 
 // --- Chat ---
 
+export function getAllChats(): Promise<ChatListElement[]> {
+  return api.get(URLs.CHAT)
+    .then((response) => {
+      return response.data.map((item: any): ChatListElement => ({
+        ...item,
+        last_message_datetime: dayjs(item.last_message_datetime)
+      }));
+    })
+}
+
+export function getChatDetail(id: number): Promise<ChatDetail> {
+  return api.get(URLs.CHAT + '/' + id)
+    .then((response) => response.data)
+}
+
+export function createChat(character_id: number): Promise<ChatDetail> {
+  return api.post(URLs.CHAT, {character_id})
+    .then((response) => response.data)
+}
+
+// --- Chatting ---
+
 export function sendChatMessage(
-  character_id: number,
-  message: string
-): Promise<chatMessageResponse> {
-  return api.post(URLs.CHAT, {
+  chat_id: number,
+  message: string,
+  previous_message_id: number,
+): Promise<ChatMessageResponse> {
+  return api.post(URLs.CHATTING, {
     message,
-    character_id,
+    chat_id,
+    previous_message_id
   }).then((response) => response.data)
 }
