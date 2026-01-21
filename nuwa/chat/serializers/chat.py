@@ -60,12 +60,6 @@ class ChatDetailSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         request = self.context.get("request")
-        if (
-            instance.is_hidden_prompt
-            and request
-            and hasattr(request, "user")
-            and request.user.is_authenticated
-            and instance.owner != request.user
-        ):
+        if instance.is_hidden_prompt:
             data["system_prompt"] = ""
         return data
