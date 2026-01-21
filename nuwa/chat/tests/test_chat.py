@@ -1,10 +1,10 @@
-from rest_framework.test import APITestCase
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
-from django.contrib.auth import get_user_model
+from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from chat.models import Chat, Character
+from chat.models import Character, Chat
 
 User = get_user_model()
 
@@ -66,8 +66,7 @@ class ChatTestCase(APITestCase):
 
     def test_create_chat(self):
         response = self.client.post(
-            get_create_url(),
-            {"character_id": self.character.id}
+            get_create_url(), {"character_id": self.character.id}
         )
         print(response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

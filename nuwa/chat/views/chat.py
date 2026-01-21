@@ -2,8 +2,12 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from chat.models import Chat
-from chat.serializers.chat import ChatListSerializer, ChatCreateSerializer, ChatDetailSerializer
 from chat.permissions import IsOwnerOrReadOnly
+from chat.serializers.chat import (
+    ChatCreateSerializer,
+    ChatDetailSerializer,
+    ChatListSerializer,
+)
 
 
 class ChatListCreateView(generics.ListCreateAPIView):

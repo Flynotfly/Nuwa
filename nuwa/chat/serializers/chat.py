@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from chat.models import Chat, Character
+from chat.models import Character, Chat
 
 
 class ChatListSerializer(serializers.ModelSerializer):

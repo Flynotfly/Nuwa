@@ -16,7 +16,6 @@ from rest_framework.views import APIView
 from chat.models import Chat, Message
 from chat.utils import update_chat_structure
 
-
 # client = Client(
 #     host="https://ollama.com",
 #     headers={"Authorization": "Bearer " + settings.OLLAMA_API_KEY},
@@ -261,4 +260,3 @@ class GenerateImageView(APIView):
         #         {"error": "Image generation failed", "detail": str(e)},
         #         status=status.HTTP_500_INTERNAL_SERVER_ERROR
         #     )
-
