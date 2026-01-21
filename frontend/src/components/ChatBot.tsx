@@ -10,19 +10,18 @@ import {
   Alert,
   useTheme,
   useMediaQuery,
+  Snackbar,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SendIcon from '@mui/icons-material/Send';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import { useParams, useNavigate } from 'react-router-dom'; // 👈 add useNavigate
-import { getChatDetail, sendChatMessage } from '../api/api'; // 👈 adjust import path
+import { useParams } from 'react-router-dom'; // 👈 removed useNavigate
+import { getChatDetail, sendChatMessage } from '../api/api';
 import { ChatMessage } from '../types/chatting';
-import { ChatDetail } from '../types/chat'; // 👈 ensure this exists
+import { ChatDetail } from '../types/chat';
 
 const ChatBot = () => {
   const { id } = useParams<{ id: string }>();
   const chatId = Number(id);
-  const navigate = useNavigate();
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -45,10 +44,6 @@ const ChatBot = () => {
       try {
         const detail = await getChatDetail(chatId);
         setChatDetail(detail);
-
-        // Optional: load existing messages if your backend supports it
-        // For now, we start fresh per session (as in your current logic)
-        // If you store message history, fetch it here
       } catch (err) {
         console.error('Failed to load chat:', err);
         setError('Could not load chat. It may not exist or you lack permission.');
@@ -69,7 +64,6 @@ const ChatBot = () => {
     setError('');
 
     try {
-      // ✅ Send message using CHAT ID (not character ID)
       const res = await sendChatMessage(chatId, inputMessage.trim());
       const aiMsg: ChatMessage = { role: 'assistant', content: res.response };
       setMessages((prev) => [...prev, aiMsg]);
@@ -81,8 +75,10 @@ const ChatBot = () => {
     }
   };
 
-  const handleClear = () => {
-    setMessages([]);
+  // ❌ Removed handleClear entirely
+
+  // Handle Snackbar close
+  const handleCloseSnackbar = () => {
     setError('');
   };
 
@@ -90,19 +86,6 @@ const ChatBot = () => {
     return (
       <Box sx={{ maxWidth: 600, margin: '2rem auto', padding: 2 }}>
         <Alert severity="error">Invalid chat ID.</Alert>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ maxWidth: 600, margin: '2rem auto', padding: 2 }}>
-        <Alert severity="error" onClose={() => navigate('/')} sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-        <Button variant="outlined" onClick={() => navigate('/')}>
-          Back to Characters
-        </Button>
       </Box>
     );
   }
@@ -275,15 +258,7 @@ const ChatBot = () => {
             </Box>
           )}
 
-          {error && (
-            <Alert
-              severity="error"
-              onClose={() => setError('')}
-              sx={{ alignSelf: 'center', width: '100%' }}
-            >
-              {error}
-            </Alert>
-          )}
+          {/* ❌ Removed inline error Alert here */}
         </Box>
 
         <Box
@@ -329,17 +304,17 @@ const ChatBot = () => {
         </Box>
       </Paper>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<RestartAltIcon />}
-          onClick={handleClear}
-          sx={{ borderRadius: 2 }}
-        >
-          Clear Conversation
-        </Button>
-      </Box>
+
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
