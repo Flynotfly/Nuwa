@@ -10,8 +10,9 @@ import {
   Alert,
   useTheme,
   useMediaQuery,
-  Snackbar,
+  Snackbar, IconButton,
 } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SendIcon from '@mui/icons-material/Send';
 import dayjs from 'dayjs';
@@ -19,6 +20,7 @@ import { useParams } from 'react-router-dom';
 import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
 import { ChatMessage } from '../types/chatting';
 import { ChatDetail } from '../types/chat';
+import {all} from "axios";
 
 const ChatBot = () => {
   const { id } = useParams<{ id: string }>();
@@ -252,35 +254,75 @@ const ChatBot = () => {
             </Box>
           ) : (
             currentMessages.map((msg) => (
-              <Box
-                key={msg.id}
-                sx={{
-                  alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '85%',
-                }}
-              >
                 <Box
+                  key={msg.id}
                   sx={{
-                    backgroundColor:
-                      msg.role === 'user'
-                        ? theme.palette.primary.main
-                        : theme.palette.grey[200],
-                    color:
-                      msg.role === 'user'
-                        ? theme.palette.primary.contrastText
-                        : theme.palette.text.primary,
-                    padding: 1.5,
-                    borderRadius: 2,
-                    borderTopLeftRadius: msg.role === 'user' ? 2 : 0,
-                    borderTopRightRadius: msg.role === 'user' ? 0 : 2,
-                    wordBreak: 'break-word',
-                    whiteSpace: 'pre-wrap',
+                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '85%',
+                    position: 'relative',
                   }}
                 >
-                  {msg.message}
+                  <Box
+                    sx={{
+                      backgroundColor:
+                        msg.role === 'user'
+                          ? theme.palette.primary.main
+                          : theme.palette.grey[200],
+                      color:
+                        msg.role === 'user'
+                          ? theme.palette.primary.contrastText
+                          : theme.palette.text.primary,
+                      padding: 1.5,
+                      borderRadius: 2,
+                      borderTopLeftRadius: msg.role === 'user' ? 2 : 0,
+                      borderTopRightRadius: msg.role === 'user' ? 0 : 2,
+                      wordBreak: 'break-word',
+                      whiteSpace: 'pre-wrap',
+                      position: 'relative',
+                    }}
+                  >
+                    {msg.message}
+                  </Box>
+
+                  {/* Icon-only "Continue from here" button */}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: -20,
+                      right: msg.role === 'user' ? 0 : 'auto',
+                      left: msg.role === 'user' ? 'auto' : 0,
+                      transform: msg.role === 'user' ? 'translateX(0)' : 'translateX(-100%)',
+                    }}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        const lastMsg = allMessages.find(_msg => _msg.id === msg.id);
+                        updateCurrentMessages(lastMsg, allMessages);
+                        setLastMessageId(msg.id);
+                      }}
+                      sx={{
+                        width: 24,
+                        height: 24,
+                        backgroundColor: msg.role === 'user'
+                          ? theme.palette.primary.dark
+                          : theme.palette.grey[300],
+                        color: msg.role === 'user'
+                          ? theme.palette.primary.contrastText
+                          : theme.palette.text.primary,
+                        '&:hover': {
+                          backgroundColor: msg.role === 'user'
+                            ? theme.palette.primary.light
+                            : theme.palette.grey[400],
+                        },
+                      }}
+                      aria-label="continue chat from this message"
+                    >
+                      <PlayArrowIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
-              </Box>
-            ))
+              ))
           )}
 
           {loading && (
