@@ -85,25 +85,6 @@ class ChatBotView(APIView):
 
         messages.append({"role": "user", "content": user_message})
         message_history = [] if not previous_message_id else all_message_ids
-        user_message = Message.objects.create(
-            owner=self.request.user,
-            chat=chat,
-            role="user",
-            media_type="text",
-            message=user_message,
-            conducted=timezone.now(),
-            history=message_history,
-        )
-        chat.structure = update_chat_structure(
-            chat.structure,
-            previous_message_id if previous_message_id else None,
-            user_message.pk,
-            user_message.history,
-        )
-        chat.last_message = user_message
-        chat.last_message_text = user_message.message
-        chat.last_message_datetime = user_message.conducted
-        chat.save()
         try:
             # response = client.chat(**payload)
             response = client.chat.completions.create(model=model, messages=messages)
@@ -122,6 +103,21 @@ class ChatBotView(APIView):
 
         ai_response = ai_response.strip()
         print(f"Answer: {ai_response}")
+        user_message = Message.objects.create(
+            owner=self.request.user,
+            chat=chat,
+            role="user",
+            media_type="text",
+            message=user_message,
+            conducted=timezone.now(),
+            history=message_history,
+        )
+        structure = update_chat_structure(
+            chat.structure,
+            previous_message_id if previous_message_id else None,
+            user_message.pk,
+            user_message.history,
+        )
         ai_history = message_history + [user_message.pk]
         ai_message = Message.objects.create(
             owner=self.request.user,
@@ -136,7 +132,7 @@ class ChatBotView(APIView):
         chat.last_message_text = ai_message.message
         chat.last_message_datetime = ai_message.conducted
         chat.structure = update_chat_structure(
-            chat.structure,
+            structure,
             user_message.pk,
             ai_message.pk,
             ai_message.history,
