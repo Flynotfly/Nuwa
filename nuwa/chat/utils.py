@@ -1,3 +1,15 @@
+import base64
+import json
+import requests
+import os
+import random
+import time
+
+from django.conf import settings
+from rest_framework.response import Response
+from rest_framework import status
+
+
 def update_chat_structure(structure, current_id, new_id, path):
     if current_id:
         current_id = int(current_id)
@@ -67,3 +79,82 @@ def update_chat_structure(structure, current_id, new_id, path):
                     return structure
             j += 1
             i += 1
+
+
+COMFY_WORKFLOW_PATH = os.path.join(
+    settings.BASE_DIR, "workflows", "test_character.json"
+)
+COMFY_URL = "http://127.0.0.1:8188"
+
+
+def generate_image(positive_prompt):
+    positive_prompt = "Stable_Yogis_SD1.5_Positives, " + positive_prompt
+    with open(COMFY_WORKFLOW_PATH, "r") as f:
+        workflow = json.load(f)
+    seed = random.randint(0, 999_999_999_999_999)
+    workflow["3"]["inputs"]["seed"] = seed
+    workflow["6"]["inputs"]["text"] = positive_prompt
+    payload = {
+        "prompt": workflow,
+    }
+    response = requests.post(
+        f"{COMFY_URL}/api/prompt",
+        json=payload,
+        timeout=15,
+    )
+    response.raise_for_status()
+    response_data = response.json()
+    prompt_id = response_data["prompt_id"]
+    print(f"Prompt submitted. ID: {prompt_id}")
+
+    max_retries = 60
+    retry_interval = 1
+
+    for _ in range(max_retries):
+        try:
+            history_resp = requests.get(
+                f"{COMFY_URL}/api/history/{prompt_id}", timeout=5
+            )
+            history_resp.raise_for_status()
+            history = history_resp.json()
+
+            if prompt_id in history:
+                prompt_data = history[prompt_id]
+                outputs = prompt_data.get("outputs", {})
+
+                # Look for SaveImage node output (node "9" in your case)
+                if "9" in outputs and "images" in outputs["9"]:
+                    image_info = outputs["9"]["images"][0]
+                    filename = image_info["filename"]
+                    subfolder = image_info.get("subfolder", "")
+                    type_ = image_info.get("type", "output")
+
+                    # Fetch the actual image
+                    img_resp = requests.get(
+                        f"{COMFY_URL}/view",
+                        params={
+                            "filename": filename,
+                            "type": type_,
+                            "subfolder": subfolder,
+                        },
+                        timeout=10,
+                    )
+                    img_resp.raise_for_status()
+
+                    image_base64 = base64.b64encode(img_resp.content).decode(
+                        "utf-8"
+                    )
+
+                    return {
+                        "image_base64": image_base64,
+                        "filename": filename,
+                    }
+                else:
+                    raise ValueError("Workflow completed but no image found in outputs")
+
+        except requests.RequestException as e:
+            pass
+
+        time.sleep(retry_interval)
+
+    raise TimeoutError("ComfyUI image generation timed out")
