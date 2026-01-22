@@ -1,9 +1,16 @@
+import {Dayjs} from "dayjs";
+
 export interface ChatMessage {
+  id: number,
   role: 'user' | 'assistant',
-  content: string,
+  media_type: 'text' | 'image' | 'video',
+  message: string,
+  media: string,
+  conducted: Dayjs,
+  history: object,
 }
 
-export interface ChatMessageResponse {
-  response: string,
-  message_id: number,
+export interface ChatTextResponse {
+  user_message: ChatMessage,
+  ai_message: ChatMessage,
 }

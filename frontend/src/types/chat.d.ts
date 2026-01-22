@@ -17,4 +17,5 @@ export interface ChatDetail {
   description: string,
   is_hidden_prompt: boolean,
   structure: object,
+  last_message: number,
 }

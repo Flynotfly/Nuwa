@@ -14,8 +14,9 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SendIcon from '@mui/icons-material/Send';
-import { useParams } from 'react-router-dom'; // 👈 removed useNavigate
-import { getChatDetail, sendChatMessage } from '../api/api';
+import dayjs from 'dayjs';
+import { useParams } from 'react-router-dom';
+import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
 import { ChatMessage } from '../types/chatting';
 import { ChatDetail } from '../types/chat';
 
@@ -33,51 +34,74 @@ const ChatBot = () => {
   const [error, setError] = useState('');
   const [showPrompt, setShowPrompt] = useState(false);
 
-  // Validate and fetch chat on mount
+  // Fetch chat details and full message history on mount
   useEffect(() => {
     if (!chatId || isNaN(chatId)) {
       setError('Invalid chat ID.');
       return;
     }
 
-    const fetchChat = async () => {
+    const fetchChatAndMessages = async () => {
       try {
         const detail = await getChatDetail(chatId);
         setChatDetail(detail);
+
+        const allMsgs = await getAllMessages(chatId);
+        // Messages should already be in chronological order from backend
+        setMessages(allMsgs);
       } catch (err) {
-        console.error('Failed to load chat:', err);
-        setError('Could not load chat. It may not exist or you lack permission.');
+        console.error('Failed to load chat or messages:', err);
+        setError('Could not load chat history.');
       }
     };
 
-    fetchChat();
+    fetchChatAndMessages();
   }, [chatId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || !chatId) return;
 
-    const userMsg: ChatMessage = { role: 'user', content: inputMessage.trim() };
+    // Determine previous_message_id: last message ID, or undefined if none
+    const previousMessageId = messages.length > 0 ? messages[messages.length - 1].id : undefined;
+
+    const userMsg: ChatMessage = {
+      id: Date.now(), // temporary optimistic ID
+      role: 'user',
+      message: inputMessage.trim(),
+      media_type: 'text',
+      media: '',
+      conducted: dayjs(),
+      history: [],
+    };
+
     setMessages((prev) => [...prev, userMsg]);
     setInputMessage('');
     setLoading(true);
     setError('');
 
     try {
-      const res = await sendChatMessage(chatId, inputMessage.trim());
-      const aiMsg: ChatMessage = { role: 'assistant', content: res.response };
+      const res = await sendChatMessage(chatId, inputMessage.trim(), previousMessageId);
+      const aiMsg: ChatMessage = {
+        id: res.id,
+        role: 'assistant',
+        message: res.message || res.response,
+        media_type: res.media_type || 'text',
+        media: res.media || '',
+        conducted: require('dayjs')(res.conducted || new Date()),
+        history: res.history || [],
+      };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
       console.error('Chat error:', err);
       setError('Failed to get response from AI.');
+      // Optionally: remove optimistic user message on error
+      setMessages((prev) => prev.filter((msg) => msg.id !== userMsg.id));
     } finally {
       setLoading(false);
     }
   };
 
-  // ❌ Removed handleClear entirely
-
-  // Handle Snackbar close
   const handleCloseSnackbar = () => {
     setError('');
   };
@@ -207,9 +231,9 @@ const ChatBot = () => {
               </Typography>
             </Box>
           ) : (
-            messages.map((msg, idx) => (
+            messages.map((msg) => (
               <Box
-                key={idx}
+                key={msg.id}
                 sx={{
                   alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                   maxWidth: '85%',
@@ -233,7 +257,7 @@ const ChatBot = () => {
                     whiteSpace: 'pre-wrap',
                   }}
                 >
-                  {msg.content}
+                  {msg.message}
                 </Box>
               </Box>
             ))
@@ -257,8 +281,6 @@ const ChatBot = () => {
               </Box>
             </Box>
           )}
-
-          {/* ❌ Removed inline error Alert here */}
         </Box>
 
         <Box
@@ -303,7 +325,6 @@ const ChatBot = () => {
           </Box>
         </Box>
       </Paper>
-
 
       <Snackbar
         open={!!error}

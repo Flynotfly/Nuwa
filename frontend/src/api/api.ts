@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 import {SignInData, TokenResponse, SignUpData, SessionData, ShortUserInfo} from "../auth/types";
 import {CharacterShort} from "../types/character";
-import {ChatMessageResponse} from "../types/chatting";
+import {ChatMessage, ChatMessageResponse, ChatTextResponse} from "../types/chatting";
 import { getTokens, saveTokens, clearTokens } from "./utils";
 import {ChatDetail, ChatListElement} from "../types/chat";
 import dayjs from 'dayjs';
@@ -151,7 +151,7 @@ export function getAllCharacters(): Promise<CharacterShort[]> {
     .then((response) => response.data)
 }
 
-// --- Chat ---
+// --- Chat and messages---
 
 export function getAllChats(): Promise<ChatListElement[]> {
   return api.get(URLs.CHAT)
@@ -173,16 +173,42 @@ export function createChat(character_id: number): Promise<ChatDetail> {
     .then((response) => response.data)
 }
 
+export function getAllMessages(chat_id: number): Promise<ChatMessage[]> {
+  return api.get(URLs.CHAT + '/' + chat_id + '/messages')
+    .then((response) => {
+      return response.data.map((item: any): ChatListElement => ({
+        ...item,
+        conducted: dayjs(item.last_message_datetime)
+      }));
+    })
+}
+
 // --- Chatting ---
 
 export function sendChatMessage(
   chat_id: number,
   message: string,
   previous_message_id: number,
-): Promise<ChatMessageResponse> {
+): Promise<ChatTextResponse> {
   return api.post(URLs.CHATTING, {
     message,
     chat_id,
     previous_message_id
-  }).then((response) => response.data)
+  }).then((response) => {
+    const data = response.data;
+    const userMessage: ChatMessage = {
+      ...data.user_message,
+      conducted: dayjs(data.user_message.conducted)
+    };
+
+    const aiMessage: ChatMessage = {
+      ...data.ai_message,
+      conducted: dayjs(data.ai_message.conducted)
+    };
+
+    return {
+      user_message: userMessage,
+      ai_message: aiMessage
+    };
+  })
 }
