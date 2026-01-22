@@ -7,7 +7,7 @@ export interface ChatMessage {
   message: string,
   media: string,
   conducted: Dayjs,
-  history: object,
+  history: Array<number>,
 }
 
 export interface ChatTextResponse {

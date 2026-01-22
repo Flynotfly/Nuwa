@@ -28,45 +28,78 @@ const ChatBot = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [chatDetail, setChatDetail] = useState<ChatDetail | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
+  const [lastMessageId, setLastMessageId] = useState<number | null>(null)
+  const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPrompt, setShowPrompt] = useState(false);
 
-  // Fetch chat details and full message history on mount
   useEffect(() => {
     if (!chatId || isNaN(chatId)) {
       setError('Invalid chat ID.');
       return;
     }
-
-    const fetchChatAndMessages = async () => {
-      try {
-        const detail = await getChatDetail(chatId);
-        setChatDetail(detail);
-
-        const allMsgs = await getAllMessages(chatId);
-        // Messages should already be in chronological order from backend
-        setMessages(allMsgs);
-      } catch (err) {
-        console.error('Failed to load chat or messages:', err);
-        setError('Could not load chat history.');
+    const loadAll = async () => {
+      await Promise.all([
+        fetchChatDetail(),
+        fetchAllMessages()
+      ]);
+    }
+    if (lastMessageId != null && allMessages.length > 0) {
+      const lastMsg = allMessages.find(msg => msg.id === lastMessageId);
+      if (lastMsg) {
+        updateCurrentMessaged(lastMsg);
+      } else {
+        console.error('Last message not found in allMessages');
       }
-    };
-
-    fetchChatAndMessages();
+    }
   }, [chatId]);
+
+  const fetchChatDetail = async () => {
+    try {
+      const detail = await getChatDetail(chatId);
+      setChatDetail(detail);
+      const lastMessageId = detail.last_message;
+      setLastMessageId(lastMessageId);
+    } catch (err) {
+      console.error('Failed to load chat detail');
+    }
+  }
+
+  const fetchAllMessages = async () => {
+    try {
+      const messages = await getAllMessages(chatId);
+      setAllMessages(messages);
+    } catch (err) {
+      console.error('Failed to load all messages');
+    }
+  }
+
+  const updateCurrentMessaged = (lastMessage: ChatMessage) => {
+    const historyIds = [...lastMessage.history, lastMessage.id];
+    const messageMap = new Map<number, ChatMessage>(
+      allMessages.map(msg => [msg.id, msg])
+    );
+    const orderedMessages: ChatMessage[] = [];
+    for (const id of historyIds) {
+      const msg = messageMap.get(id);
+      if (msg) {
+        orderedMessages.push(msg);
+      } else {
+        console.warn(`Message with ID ${id} not found in allMessages`);
+      }
+    }
+    setCurrentMessages(orderedMessages);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || !chatId) return;
 
-    // Determine previous_message_id: last message ID, or undefined if none
-    const previousMessageId = messages.length > 0 ? messages[messages.length - 1].id : undefined;
-
     const userMsg: ChatMessage = {
-      id: Date.now(), // temporary optimistic ID
+      id: -1,
       role: 'user',
       message: inputMessage.trim(),
       media_type: 'text',
@@ -75,28 +108,24 @@ const ChatBot = () => {
       history: [],
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    setCurrentMessages((prev) => [...prev, userMsg]);
     setInputMessage('');
     setLoading(true);
     setError('');
 
     try {
-      const res = await sendChatMessage(chatId, inputMessage.trim(), previousMessageId);
-      const aiMsg: ChatMessage = {
-        id: res.id,
-        role: 'assistant',
-        message: res.message || res.response,
-        media_type: res.media_type || 'text',
-        media: res.media || '',
-        conducted: require('dayjs')(res.conducted || new Date()),
-        history: res.history || [],
-      };
-      setMessages((prev) => [...prev, aiMsg]);
+      const res = await sendChatMessage(chatId, inputMessage.trim(), lastMessageId);
+      const userMessage = res.user_message
+      const aiMessage = res.ai_message
+      setAllMessages((prev) => [...prev, userMessage, aiMessage]);
+      setCurrentMessages((prev) =>
+        [...prev.filter((msg) => msg.id !== -1), userMessage, aiMessage]
+      );
+      setLastMessageId(aiMessage.id);
     } catch (err) {
       console.error('Chat error:', err);
       setError('Failed to get response from AI.');
-      // Optionally: remove optimistic user message on error
-      setMessages((prev) => prev.filter((msg) => msg.id !== userMsg.id));
+      setAllMessages((prev) => prev.filter((msg) => msg.id !== userMsg.id));
     } finally {
       setLoading(false);
     }
@@ -216,7 +245,7 @@ const ChatBot = () => {
             gap: 1.5,
           }}
         >
-          {messages.length === 0 ? (
+          {allMessages.length === 0 ? (
             <Box
               sx={{
                 display: 'flex',
@@ -231,7 +260,7 @@ const ChatBot = () => {
               </Typography>
             </Box>
           ) : (
-            messages.map((msg) => (
+            allMessages.map((msg) => (
               <Box
                 key={msg.id}
                 sx={{
