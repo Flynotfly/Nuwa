@@ -138,9 +138,13 @@ class ChatBotView(APIView):
             ai_message.history,
         )
         chat.save()
-        serializer = MessageSerializer(ai_message)
+        user_serializer = MessageSerializer(user_message)
+        ai_serializer = MessageSerializer(ai_message)
         return Response(
-            serializer.data,
+            {
+                "user_message": user_serializer.data,
+                "ai_message": ai_serializer.data,
+            },
             status=status.HTTP_200_OK,
         )
 
