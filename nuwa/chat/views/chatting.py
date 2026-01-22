@@ -5,6 +5,7 @@ import random
 import time
 import requests
 
+from django.core.files.base import ContentFile
 from django.conf import settings
 from django.utils import timezone
 from ollama import Client
@@ -231,7 +232,6 @@ class GenerateImageView(APIView):
             result = generate_image(
                 positive_prompt=positive_prompt
             )
-            return Response(result, status=status.HTTP_200_OK)
 
         except FileNotFoundError:
             return Response(
@@ -256,5 +256,31 @@ class GenerateImageView(APIView):
         except Exception as e:
             return Response(
                 {"error": "Image generation failed", "detail": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        try:
+            image_data = base64.b64decode(result["image_base64"])
+            image_content = ContentFile(image_data)
+            filename = result.get("filename")
+
+            message_history = [] if not previous_message_id else all_message_ids
+            new_message = Message(
+                owner=request.user,
+                chat=chat,
+                role="assistant",
+                media_type="image",
+                message="",
+                conducted=timezone.now(),
+                history=message_history,
+                is_active=True,
+            )
+            new_message.media.save(filename, image_content, save=True)
+            serialzier = MessageSerializer(new_message)
+            return Response(serialzier.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {"error": "Failed to save image", "detail": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

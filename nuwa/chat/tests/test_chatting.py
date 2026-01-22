@@ -69,9 +69,10 @@ Always respond as if you’re fully present, emotionally invested, and turned on
 
     def test_gen_image(self):
         response = self.client.post(get_generate_image_url(), {"chat_id": self.chat.pk})
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(len(response.data["image_base64"]) > 0)
-        self.assertTrue(len(response.data["filename"]) > 0)
+        self.assertEqual(response.status_code, 201)
+        print(response.data)
+        self.assertEqual(response.data["media_type"], "image")
+        self.assertTrue(response.data["media"])
 
 
 def get_chat_url():
