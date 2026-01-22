@@ -188,13 +188,17 @@ export function getAllMessages(chat_id: number): Promise<ChatMessage[]> {
 export function sendChatMessage(
   chat_id: number,
   message: string,
-  previous_message_id: number,
+  previous_message_id?: number | null,
 ): Promise<ChatTextResponse> {
-  return api.post(URLs.CHATTING, {
+  const payload: Record<string, unknown> = {
     message,
     chat_id,
-    previous_message_id
-  }).then((response) => {
+  };
+  if (previous_message_id !== undefined && previous_message_id !== null) {
+    payload.previous_message_id = previous_message_id;
+  }
+  return api.post(URLs.CHATTING, payload)
+    .then((response) => {
     const data = response.data;
     const userMessage: ChatMessage = {
       ...data.user_message,
