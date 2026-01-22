@@ -42,45 +42,36 @@ const ChatBot = () => {
       return;
     }
     const loadAll = async () => {
-      await Promise.all([
-        fetchChatDetail(),
-        fetchAllMessages()
-      ]);
-    }
-    if (lastMessageId != null && allMessages.length > 0) {
-      const lastMsg = allMessages.find(msg => msg.id === lastMessageId);
-      if (lastMsg) {
-        updateCurrentMessaged(lastMsg);
-      } else {
-        console.error('Last message not found in allMessages');
+      try {
+        const [detail, messages] = await Promise.all([
+          getChatDetail(chatId),
+          getAllMessages(chatId)
+        ]);
+        setChatDetail(detail);
+        setLastMessageId(detail.last_message);
+        setAllMessages(messages);
+        if (detail.last_message != null && messages.length > 0) {
+          const lastMsg = messages.find(msg => msg.id === detail.last_message);
+          if (lastMsg) {
+            updateCurrentMessages(lastMsg, messages);
+          } else {
+            console.error('Last message not found in allMessages');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load chat or messages:', err);
+        setError('Failed to load chat data.');
+      } finally {
+        setLoading(false);
       }
     }
+    loadAll();
   }, [chatId]);
 
-  const fetchChatDetail = async () => {
-    try {
-      const detail = await getChatDetail(chatId);
-      setChatDetail(detail);
-      const lastMessageId = detail.last_message;
-      setLastMessageId(lastMessageId);
-    } catch (err) {
-      console.error('Failed to load chat detail');
-    }
-  }
-
-  const fetchAllMessages = async () => {
-    try {
-      const messages = await getAllMessages(chatId);
-      setAllMessages(messages);
-    } catch (err) {
-      console.error('Failed to load all messages');
-    }
-  }
-
-  const updateCurrentMessaged = (lastMessage: ChatMessage) => {
+  const updateCurrentMessages = (lastMessage: ChatMessage, messages: ChatMessage[]) => {
     const historyIds = [...lastMessage.history, lastMessage.id];
     const messageMap = new Map<number, ChatMessage>(
-      allMessages.map(msg => [msg.id, msg])
+      messages.map(msg => [msg.id, msg])
     );
     const orderedMessages: ChatMessage[] = [];
     for (const id of historyIds) {
@@ -245,7 +236,7 @@ const ChatBot = () => {
             gap: 1.5,
           }}
         >
-          {allMessages.length === 0 ? (
+          {currentMessages.length === 0 ? (
             <Box
               sx={{
                 display: 'flex',
@@ -260,7 +251,7 @@ const ChatBot = () => {
               </Typography>
             </Box>
           ) : (
-            allMessages.map((msg) => (
+            currentMessages.map((msg) => (
               <Box
                 key={msg.id}
                 sx={{
