@@ -118,3 +118,63 @@ function updateChatStructure(
     }
   }
 }
+
+function findBranches(
+  structure: ChatStructure,
+  messageId: number,
+  history: number[]
+): number[] {
+  let i = 0; // index in history
+  let j = 0; // index in currentList
+  const result: number[] = [];
+  history.push(messageId); // mutates the input history
+
+  let currentList: ChatStructure = structure;
+
+  while (true) {
+    const item = currentList[j];
+
+    if (!Array.isArray(item)) {
+      // item is a number
+      if (item !== history[i]) {
+        throw new Error("Can't find branches");
+      }
+
+      result.push(1);
+      i++;
+      j++;
+
+      if (item === messageId) {
+        return result;
+      }
+
+      continue;
+    } else {
+      // item is a sublist
+      currentList = item;
+      result.push(currentList.length);
+
+      let found = false;
+      for (const element of currentList) {
+        if (Array.isArray(element) && element.length > 0 && element[0] === history[i]) {
+          currentList = element;
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        throw new Error("Can't find branches");
+      }
+
+      j = 0;
+
+      if (currentList[0] === messageId) {
+        return result;
+      }
+
+      j++;
+      i++;
+    }
+  }
+}
