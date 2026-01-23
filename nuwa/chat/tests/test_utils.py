@@ -111,5 +111,5 @@ class RebaseBranchTestCase(TestCase):
             [41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 55, 56]
         ]]
         history = [15, 16, 29, 30]
-        result = rebase_branch(structure, 31, history, 1)
+        result = rebase_branch(structure, history, 1)
         self.assertEqual(result, [15, 16, 29, 30, 33, 34, 35, 36])

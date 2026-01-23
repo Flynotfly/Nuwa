@@ -125,7 +125,7 @@ def find_branches(structure: list, message_id: int, history: list):
             i += 1
 
 
-def rebase_branch(structure: list, message_id: int, history: list, branch: int):
+def rebase_branch(structure: list, history: list, branch: int):
     i = 0
     j = 0
     result = []
