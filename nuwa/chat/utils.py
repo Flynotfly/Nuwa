@@ -90,6 +90,41 @@ def update_chat_structure(structure, current_id, new_id, path):
             i += 1
 
 
+def find_branches(structure: list, message_id: int, history: list):
+    i = 0
+    j = 0
+    result = []
+    history.append(message_id)
+    current_list = structure
+    while True:
+        item = current_list[j]
+        if not isinstance(item, list):
+            if not item == history[i]:
+                raise ValueError("Cann't find branches")
+            result.append(1)
+            i += 1
+            j += 1
+            if item == message_id:
+                return result
+            continue
+        else:
+            current_list = item
+            result.append(len(current_list))
+            is_finded = False
+            for element in current_list:
+                if element[0] == history[i]:
+                    current_list = element
+                    is_finded = True
+                    break
+            if not is_finded:
+                raise ValueError("Cann't find branches")
+            j = 0
+            if current_list[0] == message_id:
+                return result
+            j += 1
+            i += 1
+
+
 COMFY_WORKFLOW_PATH = os.path.join(
     settings.BASE_DIR, "workflows", "test_character.json"
 )
