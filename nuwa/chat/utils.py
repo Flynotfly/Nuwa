@@ -45,8 +45,8 @@ def update_chat_structure(structure, current_id, new_id, path):
                     current_list.append([new_id])
                     return structure
                 else:
-                    cutted = current_list[j + 1 :]
-                    del current_list[j + 1 :]
+                    cutted = current_list[j + 1:]
+                    del current_list[j + 1:]
                     current_list.append(list())
                     current_list[-1].append(cutted)
                     current_list[-1].append([new_id])
@@ -57,7 +57,7 @@ def update_chat_structure(structure, current_id, new_id, path):
                 continue
             else:
                 raise ValueError(
-                    f"Cann't update chat structure, path value is {path[i]}, item is {item}"
+                    f"Can't update chat structure, path value is {path[i]}, item is {item}"
                 )
         else:
             current_list = item
@@ -69,7 +69,7 @@ def update_chat_structure(structure, current_id, new_id, path):
                     is_finded = True
                     break
             if not is_finded:
-                raise ValueError("Cann't update chat structure")
+                raise ValueError("Can't update chat structure")
             j = 0
             if current_list[0] == current_id:
                 if j + 1 == len(current_list):
@@ -80,8 +80,8 @@ def update_chat_structure(structure, current_id, new_id, path):
                     current_list.append([new_id])
                     return structure
                 else:
-                    cutted = current_list[j - 1 :]
-                    del current_list[j + 1 :]
+                    cutted = current_list[j + 1:]
+                    del current_list[j + 1:]
                     current_list.append(list())
                     current_list[-1].append(cutted)
                     current_list[-1].append([new_id])
@@ -100,7 +100,7 @@ def find_branches(structure: list, message_id: int, history: list):
         item = current_list[j]
         if not isinstance(item, list):
             if not item == history[i]:
-                raise ValueError("Cann't find branches")
+                raise ValueError("Can't find branches")
             result.append(1)
             i += 1
             j += 1
@@ -117,12 +117,58 @@ def find_branches(structure: list, message_id: int, history: list):
                     is_finded = True
                     break
             if not is_finded:
-                raise ValueError("Cann't find branches")
+                raise ValueError("Can't find branches")
             j = 0
             if current_list[0] == message_id:
                 return result
             j += 1
             i += 1
+
+
+def rebase_branch(structure: list, message_id: int, history: list, branch: int):
+    i = 0
+    j = 0
+    result = []
+    current_list = structure
+    while i < len(history):
+        item = current_list[j]
+        if not isinstance(item, list):
+            if not item == history[i]:
+                raise ValueError("Can't rebase branch")
+            result.append(item)
+            i += 1
+            j += 1
+            continue
+        else:
+            current_list = item
+            is_finded = False
+            for element in current_list:
+                if element[0] == history[i]:
+                    current_list = element
+                    is_finded = True
+                    break
+            if not is_finded:
+                raise ValueError("Can't rebase branch")
+            result.append(current_list[0])
+            i += 1
+            j = 1
+    if len(current_list[j]) - 1 < branch or branch < 0:
+        raise ValueError("Branch value is invalid")
+    current_list = current_list[j][branch]
+    result.append(current_list[0])
+    j = 1
+    while j < len(current_list):
+        item = current_list[j]
+        if not isinstance(item, list):
+            result.append(item)
+            j += 1
+            continue
+        else:
+            current_list = item
+            current_list = current_list[0]
+            result.append(current_list[0])
+            j = 1
+    return result
 
 
 COMFY_WORKFLOW_PATH = os.path.join(
