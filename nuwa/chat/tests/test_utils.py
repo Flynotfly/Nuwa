@@ -58,3 +58,13 @@ class UpdateChatStructureTestCase(TestCase):
         structure = [0, 1, [[2, 4, 5, 6], [3, 7, 8, 9]]]
         result = update_chat_structure(structure, current_id=1, new_id=10, path=[0])
         self.assertEqual(result, [0, 1, [[2, 4, 5, 6], [3, 7, 8, 9], [10]]])
+
+    def test_branch_root(self):
+        structure = [0, 1, 2]
+        result = update_chat_structure(structure, current_id=None, new_id=3, path=[])
+        self.assertEqual(result, [[0, 1, 2], [3]])
+
+    def test_branch_root_2(self):
+        structure = [[0, 1], [2]]
+        result = update_chat_structure(structure, current_id=None, new_id=3, path=[])
+        self.assertEqual(result, [[0, 1], [2], [3]])

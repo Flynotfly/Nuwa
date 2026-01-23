@@ -18,8 +18,17 @@ def update_chat_structure(structure, current_id, new_id, path):
         path = path[:-1]
     # print(f"{structure=}, {current_id=}, {new_id=}, {path=}")
     if current_id is None:
-        structure = [new_id]
+        if not structure:
+            structure = [new_id]
+            return structure
+        item = structure[0]
+        if not isinstance(item, list):  # [0, 1, 2] => [[0, 1, 2], [3]]
+            structure = [structure, [new_id]]
+            return structure
+        #  [[0], [1]] => [[0], [1], [2]
+        structure.append([new_id])
         return structure
+
     i = 0
     j = 0
     current_list = structure
