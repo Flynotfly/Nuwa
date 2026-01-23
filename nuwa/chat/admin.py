@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Character, Chat
+from .models import Character, Chat, Message
 
 
 @admin.register(Character)
@@ -46,3 +46,13 @@ class ChatAdmin(admin.ModelAdmin):
     )
     date_hierarchy = 'last_message_datetime'
     ordering = ('-last_message_datetime',)
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ("id", 'owner', 'chat', 'role', 'media_type', 'conducted', 'is_active')
+    list_filter = ('role', 'media_type', 'is_active', 'conducted')
+    search_fields = ('owner__username', 'chat__id', 'message')
+    date_hierarchy = 'conducted'
+    ordering = ['-conducted']
+    readonly_fields = ('created_at', 'edited_at')
