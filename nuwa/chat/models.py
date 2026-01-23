@@ -126,6 +126,7 @@ class Message(models.Model):
     is_active = models.BooleanField(default=True)
     conducted = models.DateTimeField()
     history = models.JSONField(default=list)
+    info = models.JSONField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(auto_now=True)

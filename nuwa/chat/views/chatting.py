@@ -85,11 +85,12 @@ class ChatBotView(APIView):
                 messages.append({"role": message.role, "content": message.message})
 
         messages.append({"role": "user", "content": user_message})
+        think = "low"
         payload = {
             "model": model,
             "messages": messages,
             "stream": False,
-            "think": "low",
+            "think": think,
         }
         try:
             response = client.chat(**payload)
@@ -135,6 +136,10 @@ class ChatBotView(APIView):
             message=ai_response,
             conducted=timezone.now(),
             history=ai_history,
+            info={
+                "model": model,
+                "think": think,
+            }
         )
         chat.last_message = ai_message
         chat.last_message_text = ai_message.message
@@ -274,6 +279,10 @@ class GenerateImageView(APIView):
                 conducted=timezone.now(),
                 history=message_history,
                 is_active=True,
+                info={
+                    "model": "realismByStableYogi_sd15V9",
+                    "positive_prompt": positive_prompt,
+                }
             )
             new_message.media.save(filename, image_content, save=True)
             serialzier = MessageSerializer(new_message)
