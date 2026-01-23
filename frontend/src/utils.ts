@@ -178,3 +178,70 @@ function findBranches(
     }
   }
 }
+
+function rebaseBranch(
+  structure: ChatStructure,
+  history: number[],
+  branch: number
+): number[] {
+  let i = 0;
+  let j = 0;
+  const result: number[] = [];
+  let currentList: ChatStructure = structure;
+
+  // Follow the history path
+  while (i < history.length) {
+    const item = currentList[j];
+    if (!Array.isArray(item)) {
+      if (item !== history[i]) {
+        throw new Error("Can't rebase branch");
+      }
+      result.push(item);
+      i++;
+      j++;
+    } else {
+      currentList = item as ChatStructure;
+      let found = false;
+      for (const element of currentList) {
+        if (Array.isArray(element) && element.length > 0 && element[0] === history[i]) {
+          currentList = element as ChatStructure;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        throw new Error("Can't rebase branch");
+      }
+      result.push(currentList[0]);
+      i++;
+      j = 1;
+    }
+  }
+
+  // Validate and select branch
+  const nextItem = currentList[j];
+  if (!Array.isArray(nextItem) || branch < 0 || branch >= nextItem.length) {
+    throw new Error("Branch value is invalid");
+  }
+
+  currentList = nextItem[branch] as ChatStructure;
+  result.push(currentList[0]);
+  j = 1;
+
+  // Final traversal — exactly as in Python
+  while (j < currentList.length) {
+    const item = currentList[j];
+    if (!Array.isArray(item)) {
+      result.push(item as number);
+      j++;
+    } else {
+      // This is the critical part: mimic Python's two-step assignment
+      currentList = item as ChatStructure;     // current_list = item
+      currentList = currentList[0] as ChatStructure; // current_list = current_list[0]
+      result.push(currentList[0] as number);
+      j = 1;
+    }
+  }
+
+  return result;
+}
