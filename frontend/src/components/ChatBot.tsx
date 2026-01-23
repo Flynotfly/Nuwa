@@ -283,44 +283,6 @@ const ChatBot = () => {
                   >
                     {msg.message}
                   </Box>
-
-                  {/* Icon-only "Continue from here" button */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: -20,
-                      right: msg.role === 'user' ? 0 : 'auto',
-                      left: msg.role === 'user' ? 'auto' : 0,
-                      transform: msg.role === 'user' ? 'translateX(0)' : 'translateX(-100%)',
-                    }}
-                  >
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        const lastMsg = allMessages.find(_msg => _msg.id === msg.id);
-                        updateCurrentMessages(lastMsg, allMessages);
-                        setLastMessageId(msg.id);
-                      }}
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        backgroundColor: msg.role === 'user'
-                          ? theme.palette.primary.dark
-                          : theme.palette.grey[300],
-                        color: msg.role === 'user'
-                          ? theme.palette.primary.contrastText
-                          : theme.palette.text.primary,
-                        '&:hover': {
-                          backgroundColor: msg.role === 'user'
-                            ? theme.palette.primary.light
-                            : theme.palette.grey[400],
-                        },
-                      }}
-                      aria-label="continue chat from this message"
-                    >
-                      <PlayArrowIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
                 </Box>
               ))
           )}
