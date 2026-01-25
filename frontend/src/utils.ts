@@ -1,6 +1,6 @@
 type ChatStructure = (number | ChatStructure)[];
 
-function updateChatStructure(
+export function updateChatStructure(
   structure: ChatStructure,
   currentId: number | null | string,
   newId: number | string,
@@ -119,7 +119,7 @@ function updateChatStructure(
   }
 }
 
-function findBranches(
+export function findBranches(
   structure: ChatStructure,
   messageId: number,
   history: number[]
@@ -179,7 +179,7 @@ function findBranches(
   }
 }
 
-function rebaseBranch(
+export function rebaseBranch(
   structure: ChatStructure,
   history: number[],
   branch: number
@@ -245,3 +245,10 @@ function rebaseBranch(
 
   return result;
 }
+
+export const removeLastElement = (history: number[]): number[] => {
+  if (history.length === 0) {
+    return history;
+  }
+  return history.slice(0, -1);
+};

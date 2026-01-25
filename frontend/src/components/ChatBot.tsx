@@ -20,7 +20,7 @@ import { useParams } from 'react-router-dom';
 import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
 import { ChatMessage } from '../types/chatting';
 import { ChatDetail } from '../types/chat';
-import {all} from "axios";
+import { updateChatStructure, removeLastElement} from '../utils';
 
 const ChatBot = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,9 +29,12 @@ const ChatBot = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  type ChatStructure = (number | ChatStructure)[];
+
   const [chatDetail, setChatDetail] = useState<ChatDetail | null>(null);
   const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
-  const [lastMessageId, setLastMessageId] = useState<number | null>(null)
+  const [lastMessageId, setLastMessageId] = useState<number | null>(null);
+  const [chatStructure, setChatStructure] = useState<ChatStructure>([]);
   const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,6 +54,7 @@ const ChatBot = () => {
         ]);
         setChatDetail(detail);
         setLastMessageId(detail.last_message);
+        setChatStructure(detail.structure);
         setAllMessages(messages);
         if (detail.last_message != null && messages.length > 0) {
           const lastMsg = messages.find(msg => msg.id === detail.last_message);
@@ -107,7 +111,8 @@ const ChatBot = () => {
     setError('');
 
     try {
-      const res = await sendChatMessage(chatId, inputMessage.trim(), lastMessageId);
+      const sendPreviousMessageId = lastMessageId;
+      const res = await sendChatMessage(chatId, inputMessage.trim(), sendPreviousMessageId);
       const userMessage = res.user_message
       const aiMessage = res.ai_message
       setAllMessages((prev) => [...prev, userMessage, aiMessage]);
@@ -115,6 +120,10 @@ const ChatBot = () => {
         [...prev.filter((msg) => msg.id !== -1), userMessage, aiMessage]
       );
       setLastMessageId(aiMessage.id);
+      const history = removeLastElement(userMessage.history);
+      const structureWithUserMessage = updateChatStructure(chatStructure, sendPreviousMessageId, userMessage.id, history);
+      const structureWithAiMessage = updateChatStructure(structureWithUserMessage, userMessage.id, aiMessage.id, userMessage.history)
+      setChatStructure(structureWithAiMessage);
     } catch (err) {
       console.error('Chat error:', err);
       setError('Failed to get response from AI.');
