@@ -136,7 +136,6 @@ const ChatBot = () => {
     } catch (err) {
       console.error('Chat error:', err);
       setError('Failed to get response from AI.');
-      setAllMessages((prev) => prev.filter((msg) => msg.id !== userMsg.id));
     } finally {
       setLoading(false);
     }
