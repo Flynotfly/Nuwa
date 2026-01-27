@@ -46,6 +46,8 @@ const ChatBot = () => {
   const [error, setError] = useState('');
   const [showPrompt, setShowPrompt] = useState(false);
 
+  const formRef = React.useRef<HTMLFormElement>(null);
+
   useEffect(() => {
     if (!chatId || isNaN(chatId)) {
       setError('Invalid chat ID.');
@@ -547,6 +549,7 @@ const ChatBot = () => {
 
         <Box
           component="form"
+          ref={formRef}
           onSubmit={handleSubmit}
           sx={{
             padding: 2,
@@ -565,6 +568,17 @@ const ChatBot = () => {
               disabled={loading}
               multiline
               maxRows={3}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return;
+                // Allow newline when Ctrl/Cmd is pressed (cross-platform)
+                if (event.ctrlKey || event.metaKey) {
+                  event.preventDefault();
+                  setInputMessage(prev => prev + '\n');
+                  return;
+                }
+                event.preventDefault();
+                formRef.current?.requestSubmit();
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
