@@ -20,7 +20,7 @@ import { useParams } from 'react-router-dom';
 import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
 import { ChatMessage } from '../types/chatting';
 import { ChatDetail } from '../types/chat';
-import { updateChatStructure, removeLastElement} from '../utils';
+import { updateChatStructure, removeLastElement, findBranches} from '../utils';
 
 const ChatBot = () => {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +35,7 @@ const ChatBot = () => {
   const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
   const [lastMessageId, setLastMessageId] = useState<number | null>(null);
   const [chatStructure, setChatStructure] = useState<ChatStructure>([]);
+  const [branchesChoices, setBranchesChoices] = useState<number[]>([]);
   const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,7 @@ const ChatBot = () => {
         if (detail.last_message != null && messages.length > 0) {
           const lastMsg = messages.find(msg => msg.id === detail.last_message);
           if (lastMsg) {
-            updateCurrentMessages(lastMsg, messages);
+            updateCurrentMessages(lastMsg, messages, detail.structure);
           } else {
             console.error('Last message not found in allMessages');
           }
@@ -74,7 +75,11 @@ const ChatBot = () => {
     loadAll();
   }, [chatId]);
 
-  const updateCurrentMessages = (lastMessage: ChatMessage, messages: ChatMessage[]) => {
+  const updateCurrentMessages = (
+    lastMessage: ChatMessage,
+    messages: ChatMessage[],
+    structure: ChatStructure
+  ) => {
     const historyIds = [...lastMessage.history, lastMessage.id];
     const messageMap = new Map<number, ChatMessage>(
       messages.map(msg => [msg.id, msg])
@@ -89,6 +94,8 @@ const ChatBot = () => {
       }
     }
     setCurrentMessages(orderedMessages);
+    const newBranchesChoices = findBranches(structure, lastMessage.id, lastMessage.history);
+    setBranchesChoices(newBranchesChoices);
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,6 +131,8 @@ const ChatBot = () => {
       const structureWithUserMessage = updateChatStructure(chatStructure, sendPreviousMessageId, userMessage.id, history);
       const structureWithAiMessage = updateChatStructure(structureWithUserMessage, userMessage.id, aiMessage.id, userMessage.history)
       setChatStructure(structureWithAiMessage);
+      setBranchesChoices((prev) => [...prev, 1, 1]);
+      console.log(branchesChoices);
     } catch (err) {
       console.error('Chat error:', err);
       setError('Failed to get response from AI.');
