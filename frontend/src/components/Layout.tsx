@@ -192,16 +192,19 @@ const Layout = () => {
         {drawer}
       </Drawer>
 
-      {/* Permanent drawer on desktop */}
+      {/* Permanent drawer on desktop - Made FIXED */}
       <Drawer
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
+          width: 250,
+          flexShrink: 0,
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: 250,
-            position: 'relative',
+            position: 'fixed', // This makes it fixed
             height: '100vh',
+            overflowY: 'auto', // Allow scrolling inside the drawer if content overflows
           },
         }}
         open
@@ -216,6 +219,7 @@ const Layout = () => {
           flexGrow: 1,
           bgcolor: 'background.default',
           width: { sm: `calc(100% - 250px)` },
+          ml: { sm: '250px' }, // Add margin to account for fixed drawer
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
