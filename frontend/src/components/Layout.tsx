@@ -20,7 +20,7 @@ import {
   Button,
   useTheme,
   useMediaQuery,
-  Tooltip,
+  CssBaseline,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -158,6 +158,7 @@ const Layout = () => {
   if (authLoading) {
     return (
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <CssBaseline />
         <AppBar position="fixed">
           <Toolbar>
             <Typography variant="h6">AI Companions</Typography>
@@ -172,6 +173,8 @@ const Layout = () => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <CssBaseline />
+
       {/* Mobile drawer */}
       <Drawer
         variant="temporary"
@@ -180,7 +183,10 @@ const Layout = () => {
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 250 },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: 250,
+          },
         }}
       >
         {drawer}
@@ -191,7 +197,12 @@ const Layout = () => {
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 250 },
+          '& .MuiDrawer-paper': {
+            boxSizing: 'border-box',
+            width: 250,
+            position: 'relative',
+            height: '100vh',
+          },
         }}
         open
       >
@@ -199,12 +210,22 @@ const Layout = () => {
       </Drawer>
 
       {/* Main content */}
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          bgcolor: 'background.default',
+          width: { sm: `calc(100% - 250px)` },
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         <AppBar
           position="fixed"
           sx={{
-            ml: { sm: 250 },
             width: { sm: `calc(100% - 250px)` },
+            ml: { sm: '250px' },
             zIndex: theme.zIndex.drawer + 1,
           }}
         >
@@ -227,8 +248,16 @@ const Layout = () => {
             </Typography>
           </Toolbar>
         </AppBar>
-        <Toolbar /> {/* Spacer for fixed app bar */}
-        <Box sx={{ p: 3 }}>
+
+        {/* Spacer for fixed app bar */}
+        <Toolbar />
+
+        {/* Main content area */}
+        <Box sx={{
+          flexGrow: 1,
+          p: 3,
+          overflow: 'auto',
+        }}>
           <Outlet />
         </Box>
       </Box>
