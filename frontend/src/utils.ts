@@ -123,10 +123,11 @@ export function findBranches(
   structure: ChatStructure,
   messageId: number,
   history: number[]
-): number[] {
+): [number[], number[]] {
   let i = 0; // index in history
   let j = 0; // index in currentList
-  const result: number[] = [];
+  const branchesQnt: number[] = [];
+  const chosenBranches: number[] = [];
   history.push(messageId); // mutates the input history
 
   let currentList: ChatStructure = structure;
@@ -135,29 +136,32 @@ export function findBranches(
     const item = currentList[j];
 
     if (!Array.isArray(item)) {
-      // item is a number
+      // item is a number (leaf node)
       if (item !== history[i]) {
         throw new Error("Can't find branches");
       }
 
-      result.push(1);
+      branchesQnt.push(1);
+      chosenBranches.push(0);
       i++;
       j++;
 
       if (item === messageId) {
-        return result;
+        return [branchesQnt, chosenBranches];
       }
 
       continue;
     } else {
-      // item is a sublist
+      // item is a sublist (branching point)
       currentList = item;
-      result.push(currentList.length);
+      branchesQnt.push(currentList.length);
 
       let found = false;
-      for (const element of currentList) {
+      for (let index = 0; index < currentList.length; index++) {
+        const element = currentList[index];
         if (Array.isArray(element) && element.length > 0 && element[0] === history[i]) {
           currentList = element;
+          chosenBranches.push(index);
           found = true;
           break;
         }
@@ -169,12 +173,12 @@ export function findBranches(
 
       j = 0;
 
-      if (currentList[0] === messageId) {
-        return result;
-      }
 
-      j++;
+      if (currentList[0] === messageId) {
+        return [branchesQnt, chosenBranches];
+      }
       i++;
+      j++;
     }
   }
 }
