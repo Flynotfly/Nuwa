@@ -84,7 +84,10 @@ class FindBranchesTestCase(TestCase):
         ]]
         history = [15, 16, 29, 30, 33, 34, 37, 38, 39]
         result = find_branches(structure, 40, history)
-        self.assertEqual(result, [1, 1, 3, 1, 2, 1, 2, 1, 1, 1])
+        self.assertEqual(result, (
+            [1, 1, 3, 1, 2, 1, 2, 1, 1, 1],
+            [0, 0, 1, 0, 1, 0, 1, 0, 0, 0]
+        ))
 
     def test_complex_2(self):
         structure = [[
@@ -100,7 +103,10 @@ class FindBranchesTestCase(TestCase):
         ]]
         history = [1, 5]
         result = find_branches(structure, 6, history)
-        self.assertEqual(result, [3, 2, 2])
+        self.assertEqual(result, (
+            [3, 2, 2],
+            [1, 1, 1]
+        ))
 
 
 class RebaseBranchTestCase(TestCase):

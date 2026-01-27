@@ -93,7 +93,8 @@ def update_chat_structure(structure, current_id, new_id, path):
 def find_branches(structure: list, message_id: int, history: list):
     i = 0
     j = 0
-    result = []
+    branches_qnt = []
+    chosen_branches = []
     history.append(message_id)
     current_list = structure
     while True:
@@ -101,26 +102,28 @@ def find_branches(structure: list, message_id: int, history: list):
         if not isinstance(item, list):
             if not item == history[i]:
                 raise ValueError("Can't find branches")
-            result.append(1)
+            branches_qnt.append(1)
+            chosen_branches.append(0)
             i += 1
             j += 1
             if item == message_id:
-                return result
+                return branches_qnt, chosen_branches
             continue
         else:
             current_list = item
-            result.append(len(current_list))
+            branches_qnt.append(len(current_list))
             is_finded = False
-            for element in current_list:
+            for index, element in enumerate(current_list):
                 if element[0] == history[i]:
                     current_list = element
+                    chosen_branches.append(index)
                     is_finded = True
                     break
             if not is_finded:
                 raise ValueError("Can't find branches")
             j = 0
             if current_list[0] == message_id:
-                return result
+                return branches_qnt, chosen_branches
             j += 1
             i += 1
 
