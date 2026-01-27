@@ -36,6 +36,7 @@ const ChatBot = () => {
   const [lastMessageId, setLastMessageId] = useState<number | null>(null);
   const [chatStructure, setChatStructure] = useState<ChatStructure>([]);
   const [branchesChoices, setBranchesChoices] = useState<number[]>([]);
+  const [chosenBranches, setChosenBranches] = useState<number[]>([]);
   const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -94,8 +95,9 @@ const ChatBot = () => {
       }
     }
     setCurrentMessages(orderedMessages);
-    const newBranchesChoices = findBranches(structure, lastMessage.id, lastMessage.history);
+    const [newBranchesChoices, choices] = findBranches(structure, lastMessage.id, lastMessage.history);
     setBranchesChoices(newBranchesChoices);
+    setChosenBranches(choices);
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,6 +134,7 @@ const ChatBot = () => {
       const structureWithAiMessage = updateChatStructure(structureWithUserMessage, userMessage.id, aiMessage.id, userMessage.history)
       setChatStructure(structureWithAiMessage);
       setBranchesChoices((prev) => [...prev, 1, 1]);
+      setChosenBranches((prev) => [...prev, 0, 0]);
       console.log(branchesChoices);
     } catch (err) {
       console.error('Chat error:', err);
