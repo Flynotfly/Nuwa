@@ -107,6 +107,7 @@ const ChatBot = () => {
   }
 
   const handleChangeBranch = (msg: ChatMessage, index: number, direction: number) => {
+    if (loading) return;
     const newBranch = chosenBranches[index] + direction;
     const newMessagesIds = rebaseBranch(chatStructure, msg.history, newBranch);
     const messageMap = new Map(allMessages.map(m => [m.id, m]));
