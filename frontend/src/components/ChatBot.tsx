@@ -21,6 +21,7 @@ import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
 import { ChatMessage } from '../types/chatting';
 import { ChatDetail } from '../types/chat';
 import { updateChatStructure, removeLastElement, findBranches, rebaseBranch } from '../utils';
+import {send} from "vite";
 
 const ChatBot = () => {
   const { id } = useParams<{ id: string }>();
@@ -143,6 +144,9 @@ const ChatBot = () => {
       return;
     }
     const newCurrentMessages = currentMessages.slice(0, index + 1);
+    const prevMessageId = newCurrentMessages.length > 1
+      ? newCurrentMessages[newCurrentMessages.length - 2].id
+      : null;
     setCurrentMessages(newCurrentMessages);
     setBranchesChoices(prev => prev.slice(0, index + 1));
     setChosenBranches(prev => prev.slice(0, index + 1));
@@ -171,6 +175,7 @@ const ChatBot = () => {
         } : m
       )
     );
+    await sendMessage(true, prevMessageId);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -189,12 +194,17 @@ const ChatBot = () => {
 
     setCurrentMessages((prev) => [...prev, userMsg]);
     setInputMessage('');
+
+    await sendMessage(false, lastMessageId);
+  };
+
+  const sendMessage = async (isEdit: boolean, _lastMessageId: number) => {
     setLoading(true);
     setError('');
-
     try {
-      const sendPreviousMessageId = lastMessageId;
-      const res = await sendChatMessage(chatId, inputMessage.trim(), sendPreviousMessageId);
+      const sendPreviousMessageId = _lastMessageId;
+      const messageToSend = isEdit ? editMessageText.trim() : inputMessage.trim();
+      const res = await sendChatMessage(chatId, messageToSend, sendPreviousMessageId);
       const userMessage = res.user_message
       const aiMessage = res.ai_message
       setAllMessages((prev) => [...prev, userMessage, aiMessage]);
@@ -215,7 +225,7 @@ const ChatBot = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleCloseSnackbar = () => {
     setError('');
