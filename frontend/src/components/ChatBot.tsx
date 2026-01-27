@@ -210,6 +210,7 @@ const ChatBot = () => {
       setChosenBranches((prev) => [...prev, 0, 0]);
     } catch (err) {
       console.error('Chat error:', err);
+      setCurrentMessages((prev) => prev.filter((msg) => msg.id !== -1));
       setError('Failed to get response from AI.');
     } finally {
       setLoading(false);
