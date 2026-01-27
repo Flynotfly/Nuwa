@@ -12,7 +12,7 @@ import {
   useMediaQuery,
   Snackbar, IconButton,
 } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SendIcon from '@mui/icons-material/Send';
 import dayjs from 'dayjs';
@@ -39,6 +39,8 @@ const ChatBot = () => {
   const [chosenBranches, setChosenBranches] = useState<number[]>([]);
   const [currentMessages, setCurrentMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editMessageText, setEditMessageText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPrompt, setShowPrompt] = useState(false);
@@ -117,6 +119,58 @@ const ChatBot = () => {
       setChosenBranches(choices);
     }
 
+  };
+
+  const handleEditMessage = (msg: ChatMessage) => {
+    setEditingMessageId(msg.id);
+    setEditMessageText(msg.message);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditMessageText('');
+  };
+
+  const handleSaveEdit = async (msg: ChatMessage) => {
+    if (!editMessageText.trim() || !chatId) return;
+
+    console.log('Save edit for message ID:', msg.id, 'New text:', editMessageText);
+    setEditingMessageId(null);
+    setEditMessageText('');
+    const index = currentMessages.findIndex(m => m.id === msg.id);
+    if (index === -1) {
+      console.warn('Message not found in currentMessages for forking');
+      return;
+    }
+    const newCurrentMessages = currentMessages.slice(0, index + 1);
+    setCurrentMessages(newCurrentMessages);
+    setBranchesChoices(prev => prev.slice(0, index + 1));
+    setChosenBranches(prev => prev.slice(0, index + 1));
+    const lastKeptMessage = newCurrentMessages[newCurrentMessages.length - 1];
+    setLastMessageId(lastKeptMessage.id);
+    setBranchesChoices(prev => {
+      const truncated = prev.slice(0, index + 1);
+      truncated[truncated.length - 1] += 1;
+      return truncated;
+    });
+    setChosenBranches(prev => {
+      const truncated = prev.slice(0, index + 1);
+      truncated[truncated.length - 1] += 1;
+      return truncated;
+    });
+    setCurrentMessages(prev =>
+      prev.map(m =>
+        m.id === msg.id ? {
+          id: -1,
+          role: 'user',
+          message: editMessageText.trim(),
+          media_type: 'text',
+          media: '',
+          conducted: dayjs(),
+          history: [],
+        } : m
+      )
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -300,6 +354,9 @@ const ChatBot = () => {
                 ? chosenBranches[idx]
                 : 0;
 
+              // Check if this message is being edited
+              const isEditing = editingMessageId === msg.id;
+
               return (
                 <Box
                   key={msg.id}
@@ -309,74 +366,148 @@ const ChatBot = () => {
                     position: 'relative',
                   }}
                 >
-                  <Box
-                    sx={{
-                      backgroundColor:
-                        msg.role === 'user'
-                          ? theme.palette.primary.main
-                          : theme.palette.grey[200],
-                      color:
-                        msg.role === 'user'
-                          ? theme.palette.primary.contrastText
-                          : theme.palette.text.primary,
-                      padding: 1.5,
-                      borderRadius: 2,
-                      borderTopLeftRadius: msg.role === 'user' ? 2 : 0,
-                      borderTopRightRadius: msg.role === 'user' ? 0 : 2,
-                      wordBreak: 'break-word',
-                      whiteSpace: 'pre-wrap',
-                      position: 'relative',
-                    }}
-                  >
-                    {msg.message}
-                  </Box>
-
-                  {/* Branch navigation controls - ONLY shown when >1 branch available */}
-                  {totalBranches > 1 && (
+                  {isEditing && msg.role === 'user' ? (
+                    // Edit mode for user messages
                     <Box
                       sx={{
                         display: 'flex',
-                        justifyContent: 'center',
-                        marginTop: 0.75,
-                        gap: 0.5,
-                        '& .MuiIconButton-root': {
-                          width: 28,
-                          height: 28,
-                          padding: 0.25,
-                        }
+                        flexDirection: 'column',
+                        gap: 1,
+                        width: '100%',
                       }}
                     >
-                      <IconButton
+                      <TextField
+                        fullWidth
+                        multiline
+                        maxRows={4}
+                        value={editMessageText}
+                        onChange={(e) => setEditMessageText(e.target.value)}
+                        variant="outlined"
                         size="small"
-                        onClick={() => handleChangeBranch(msg, idx, -1)}
-                        disabled={currentBranch === 0}
-                        aria-label="Previous branch"
-                      >
-                        <Typography variant="caption" sx={{ fontWeight: 600 }}>&lt;</Typography>
-                      </IconButton>
-
-                      <Typography
-                        variant="caption"
+                        autoFocus
                         sx={{
-                          alignSelf: 'center',
-                          minWidth: 40,
-                          textAlign: 'center',
-                          color: 'text.secondary',
-                          fontWeight: 500
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                          },
+                        }}
+                      />
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        <Button
+                          size="small"
+                          onClick={handleCancelEdit}
+                          disabled={loading}
+                          sx={{ borderRadius: 1 }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => handleSaveEdit(msg)}
+                          disabled={loading || !editMessageText.trim()}
+                          sx={{ borderRadius: 1 }}
+                          endIcon={<SendIcon />}
+                        >
+                          Save
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : (
+                    // Normal message display
+                    <>
+                      <Box
+                        sx={{
+                          backgroundColor:
+                            msg.role === 'user'
+                              ? theme.palette.primary.main
+                              : theme.palette.grey[200],
+                          color:
+                            msg.role === 'user'
+                              ? theme.palette.primary.contrastText
+                              : theme.palette.text.primary,
+                          padding: 1.5,
+                          borderRadius: 2,
+                          borderTopLeftRadius: msg.role === 'user' ? 2 : 0,
+                          borderTopRightRadius: msg.role === 'user' ? 0 : 2,
+                          wordBreak: 'break-word',
+                          whiteSpace: 'pre-wrap',
+                          position: 'relative',
                         }}
                       >
-                        {currentBranch + 1} / {totalBranches}
-                      </Typography>
+                        {msg.message}
+                      </Box>
 
-                      <IconButton
-                        size="small"
-                        onClick={() => handleChangeBranch(msg, idx, 1)}
-                        disabled={currentBranch === totalBranches - 1}
-                        aria-label="Next branch"
-                      >
-                        <Typography variant="caption" sx={{ fontWeight: 600 }}>&gt;</Typography>
-                      </IconButton>
-                    </Box>
+                      {/* Edit button for USER messages only */}
+                      {msg.role === 'user' && msg.id !== -1 && (
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditMessage(msg)}
+                          sx={{
+                            mt: 0.5,
+                            alignSelf: 'flex-end',
+                            color: theme.palette.text.secondary,
+                            opacity: 0.7,
+                            '&:hover': {
+                              opacity: 1,
+                              backgroundColor: 'transparent',
+                              color: theme.palette.primary.main,
+                            },
+                            padding: '4px',
+                          }}
+                          aria-label={`Edit message ${msg.id}`}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
+
+                      {/* Branch navigation controls - ONLY shown when >1 branch available */}
+                      {totalBranches > 1 && (
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            marginTop: 0.75,
+                            gap: 0.5,
+                            '& .MuiIconButton-root': {
+                              width: 28,
+                              height: 28,
+                              padding: 0.25,
+                            }
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() => handleChangeBranch(msg, idx, -1)}
+                            disabled={currentBranch === 0}
+                            aria-label="Previous branch"
+                          >
+                            <Typography variant="caption" sx={{ fontWeight: 600 }}>&lt;</Typography>
+                          </IconButton>
+
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              alignSelf: 'center',
+                              minWidth: 40,
+                              textAlign: 'center',
+                              color: 'text.secondary',
+                              fontWeight: 500
+                            }}
+                          >
+                            {currentBranch + 1} / {totalBranches}
+                          </Typography>
+
+                          <IconButton
+                            size="small"
+                            onClick={() => handleChangeBranch(msg, idx, 1)}
+                            disabled={currentBranch === totalBranches - 1}
+                            aria-label="Next branch"
+                          >
+                            <Typography variant="caption" sx={{ fontWeight: 600 }}>&gt;</Typography>
+                          </IconButton>
+                        </Box>
+                      )}
+                    </>
                   )}
                 </Box>
               );
