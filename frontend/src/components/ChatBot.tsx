@@ -20,7 +20,7 @@ import { useParams } from 'react-router-dom';
 import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
 import { ChatMessage } from '../types/chatting';
 import { ChatDetail } from '../types/chat';
-import { updateChatStructure, removeLastElement, findBranches} from '../utils';
+import { updateChatStructure, removeLastElement, findBranches, rebaseBranch } from '../utils';
 
 const ChatBot = () => {
   const { id } = useParams<{ id: string }>();
@@ -76,6 +76,7 @@ const ChatBot = () => {
     loadAll();
   }, [chatId]);
 
+  // Update current messages from all messages using last message
   const updateCurrentMessages = (
     lastMessage: ChatMessage,
     messages: ChatMessage[],
@@ -99,6 +100,24 @@ const ChatBot = () => {
     setBranchesChoices(newBranchesChoices);
     setChosenBranches(choices);
   }
+
+  const handleChangeBranch = (msg: ChatMessage, index: number, direction: number) => {
+    const newBranch = chosenBranches[index] + direction;
+    const newMessagesIds = rebaseBranch(chatStructure, msg.history, newBranch);
+    const messageMap = new Map(allMessages.map(m => [m.id, m]));
+    const newMessages = newMessagesIds
+      .map(id => messageMap.get(id))
+      .filter((msg): msg is ChatMessage => msg !== undefined);
+    setCurrentMessages(newMessages);
+    const lastMessage = newMessages[newMessages.length - 1];
+    if (lastMessage) {
+      setLastMessageId(lastMessage.id);
+      const [newBranchesChoices, choices] = findBranches(chatStructure, lastMessage.id, lastMessage.history);
+      setBranchesChoices(newBranchesChoices);
+      setChosenBranches(choices);
+    }
+
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,7 +154,6 @@ const ChatBot = () => {
       setChatStructure(structureWithAiMessage);
       setBranchesChoices((prev) => [...prev, 1, 1]);
       setChosenBranches((prev) => [...prev, 0, 0]);
-      console.log(branchesChoices);
     } catch (err) {
       console.error('Chat error:', err);
       setError('Failed to get response from AI.');
@@ -273,7 +291,16 @@ const ChatBot = () => {
               </Typography>
             </Box>
           ) : (
-            currentMessages.map((msg) => (
+            currentMessages.map((msg, idx) => {
+              // Handle potential array length mismatches per requirements
+              const totalBranches = idx < branchesChoices.length
+                ? branchesChoices[idx]
+                : 1;
+              const currentBranch = idx < chosenBranches.length
+                ? chosenBranches[idx]
+                : 0;
+
+              return (
                 <Box
                   key={msg.id}
                   sx={{
@@ -303,8 +330,57 @@ const ChatBot = () => {
                   >
                     {msg.message}
                   </Box>
+
+                  {/* Branch navigation controls - ONLY shown when >1 branch available */}
+                  {totalBranches > 1 && (
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginTop: 0.75,
+                        gap: 0.5,
+                        '& .MuiIconButton-root': {
+                          width: 28,
+                          height: 28,
+                          padding: 0.25,
+                        }
+                      }}
+                    >
+                      <IconButton
+                        size="small"
+                        onClick={() => handleChangeBranch(msg, idx, -1)}
+                        disabled={currentBranch === 0}
+                        aria-label="Previous branch"
+                      >
+                        <Typography variant="caption" sx={{ fontWeight: 600 }}>&lt;</Typography>
+                      </IconButton>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          alignSelf: 'center',
+                          minWidth: 40,
+                          textAlign: 'center',
+                          color: 'text.secondary',
+                          fontWeight: 500
+                        }}
+                      >
+                        {currentBranch + 1} / {totalBranches}
+                      </Typography>
+
+                      <IconButton
+                        size="small"
+                        onClick={() => handleChangeBranch(msg, idx, 1)}
+                        disabled={currentBranch === totalBranches - 1}
+                        aria-label="Next branch"
+                      >
+                        <Typography variant="caption" sx={{ fontWeight: 600 }}>&gt;</Typography>
+                      </IconButton>
+                    </Box>
+                  )}
                 </Box>
-              ))
+              );
+            })
           )}
 
           {loading && (
