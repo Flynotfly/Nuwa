@@ -250,7 +250,7 @@ export function rebaseBranch(
   return result;
 }
 
-export const removeLastElement = (history: number[]): number[] => {
+export const removeLastElementIfNotEmpty = (history: number[]): number[] => {
   if (history.length === 0) {
     return history;
   }

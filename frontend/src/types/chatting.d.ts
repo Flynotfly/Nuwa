@@ -11,6 +11,5 @@ export interface ChatMessage {
 }
 
 export interface ChatTextResponse {
-  user_message: ChatMessage,
-  ai_message: ChatMessage,
+  messages: ChatMessage[],
 }

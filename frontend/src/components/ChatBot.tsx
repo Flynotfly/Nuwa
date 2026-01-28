@@ -20,8 +20,7 @@ import { useParams } from 'react-router-dom';
 import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
 import { ChatMessage } from '../types/chatting';
 import { ChatDetail } from '../types/chat';
-import { updateChatStructure, removeLastElement, findBranches, rebaseBranch } from '../utils';
-import {send} from "vite";
+import { updateChatStructure, removeLastElementIfNotEmpty, findBranches, rebaseBranch } from '../utils';
 
 const ChatBot = () => {
   const { id } = useParams<{ id: string }>();
@@ -214,19 +213,30 @@ const ChatBot = () => {
       const sendPreviousMessageId = _lastMessageId;
       const messageToSend = isEdit ? editMessageText.trim() : inputMessage.trim();
       const res = await sendChatMessage(chatId, messageToSend, sendPreviousMessageId, is_gen_image);
-      const userMessage = res.user_message
-      const aiMessage = res.ai_message
-      setAllMessages((prev) => [...prev, userMessage, aiMessage]);
+      const newMessages = res.messages;
+      if (!Array.isArray(newMessages) || newMessages.length === 0) {
+        console.error("Received empty messages array from API");
+        return;
+      }
+      setAllMessages((prev) => [...prev, ...newMessages]);
       setCurrentMessages((prev) =>
-        [...prev.filter((msg) => msg.id !== -1), userMessage, aiMessage]
+        [...prev.filter((msg) => msg.id !== -1), ...newMessages]
       );
-      setLastMessageId(aiMessage.id);
-      const history = removeLastElement(userMessage.history);
-      const structureWithUserMessage = updateChatStructure(chatStructure, sendPreviousMessageId, userMessage.id, history);
-      const structureWithAiMessage = updateChatStructure(structureWithUserMessage, userMessage.id, aiMessage.id, userMessage.history)
-      setChatStructure(structureWithAiMessage);
-      setBranchesChoices((prev) => [...prev, 1, 1]);
-      setChosenBranches((prev) => [...prev, 0, 0]);
+      setLastMessageId(newMessages[newMessages.length - 1].id);
+      let updatedStructure = chatStructure;
+      let currentParentId = sendPreviousMessageId;
+      for (const msg of newMessages) {
+        updatedStructure = updateChatStructure(
+          updatedStructure,
+          currentParentId,
+          msg.id,
+          removeLastElementIfNotEmpty(msg.history),
+        )
+        currentParentId = msg.id;
+      }
+      setChatStructure(updatedStructure);
+      setBranchesChoices((prev) => [...prev, ...Array(newMessages.length).fill(1)]);
+      setChosenBranches((prev) => [...prev, ...Array(newMessages.length).fill(0)]);
     } catch (err) {
       console.error('Chat error:', err);
       setCurrentMessages((prev) => prev.filter((msg) => msg.id !== -1));
