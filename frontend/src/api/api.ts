@@ -25,6 +25,7 @@ const URLs = Object.freeze({
   CHARACTER: '/characters',
   CHAT: '/chats',
   CHATTING: '/chat',
+  IMAGE: '/image',
 })
 
 let isRefreshing = false;
@@ -189,6 +190,7 @@ export function sendChatMessage(
   chat_id: number,
   message: string,
   previous_message_id?: number | null,
+  is_gen_image: boolean,
 ): Promise<ChatTextResponse> {
   const payload: Record<string, unknown> = {
     message,
@@ -197,7 +199,8 @@ export function sendChatMessage(
   if (previous_message_id !== undefined && previous_message_id !== null) {
     payload.previous_message_id = previous_message_id;
   }
-  return api.post(URLs.CHATTING, payload)
+  const url = is_gen_image ? URLs.IMAGE : URLs.CHATTING;
+  return api.post(url, payload)
     .then((response) => {
     const data = response.data;
     const userMessage: ChatMessage = {

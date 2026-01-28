@@ -178,7 +178,7 @@ const ChatBot = () => {
         } : m
       )
     );
-    await sendMessage(true, prevMessageId);
+    await sendMessage(true, prevMessageId, false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,16 +198,22 @@ const ChatBot = () => {
     setCurrentMessages((prev) => [...prev, userMsg]);
     setInputMessage('');
 
-    await sendMessage(false, lastMessageId);
+    await sendMessage(false, lastMessageId, false);
   };
 
-  const sendMessage = async (isEdit: boolean, _lastMessageId: number) => {
+  const handleGenerateImage = async () => {
+    if (!chatId) return;
+    setInputMessage('');
+    await sendMessage(false, lastMessageId, true);
+  }
+
+  const sendMessage = async (isEdit: boolean, _lastMessageId: number, is_gen_image: boolean) => {
     setLoading(true);
     setError('');
     try {
       const sendPreviousMessageId = _lastMessageId;
       const messageToSend = isEdit ? editMessageText.trim() : inputMessage.trim();
-      const res = await sendChatMessage(chatId, messageToSend, sendPreviousMessageId);
+      const res = await sendChatMessage(chatId, messageToSend, sendPreviousMessageId, is_gen_image);
       const userMessage = res.user_message
       const aiMessage = res.ai_message
       setAllMessages((prev) => [...prev, userMessage, aiMessage]);
