@@ -118,10 +118,10 @@ class RebaseBranchTestCase(TestCase):
         ]]
         history = [15, 16, 29, 30]
         result = rebase_branch(structure, history, 1)
-        self.assertEqual(result, [15, 16, 29, 30, 33, 34, 35, 36])
+        self.assertEqual(result, [15, 16, 29, 30, 33, 34, 37, 38, 39, 40])
 
     def test_simple(self):
         structure = [[[0], [1, [[2, [[4], [5]]], [3]]]]]
         history = []
         result = rebase_branch(structure, history, 1)
-        self.assertEqual(result, [1, 2, 4])
+        self.assertEqual(result, [1, 3])

@@ -168,7 +168,7 @@ def rebase_branch(structure: list, history: list, branch: int):
             continue
         else:
             current_list = item
-            current_list = current_list[0]
+            current_list = current_list[-1]
             result.append(current_list[0])
             j = 1
     return result
