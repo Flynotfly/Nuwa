@@ -155,8 +155,10 @@ class ChatBotView(APIView):
         ai_serializer = MessageSerializer(ai_message)
         return Response(
             {
-                "user_message": user_serializer.data,
-                "ai_message": ai_serializer.data,
+                "messages": [
+                    user_serializer.data,
+                    ai_serializer.data,
+                ],
             },
             status=status.HTTP_200_OK,
         )
@@ -295,7 +297,9 @@ class GenerateImageView(APIView):
             )
             new_message.media.save(filename, image_content, save=True)
             serialzier = MessageSerializer(new_message)
-            return Response(serialzier.data, status=status.HTTP_201_CREATED)
+            return Response({
+                "messages": [serialzier.data]
+            }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
             return Response(

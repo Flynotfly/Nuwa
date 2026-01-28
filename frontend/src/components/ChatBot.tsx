@@ -1,5 +1,5 @@
 // components/ChatBot.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   TextField,
@@ -10,11 +10,15 @@ import {
   Alert,
   useTheme,
   useMediaQuery,
-  Snackbar, IconButton,
+  Snackbar,
+  IconButton,
+  Link,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SendIcon from '@mui/icons-material/Send';
+import ImageIcon from '@mui/icons-material/Image';
+import DownloadIcon from '@mui/icons-material/Download';
 import dayjs from 'dayjs';
 import { useParams } from 'react-router-dom';
 import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
@@ -46,6 +50,7 @@ const ChatBot = () => {
   const [showPrompt, setShowPrompt] = useState(false);
 
   const formRef = React.useRef<HTMLFormElement>(null);
+  const imageLoadStatus = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!chatId || isNaN(chatId)) {
@@ -134,6 +139,10 @@ const ChatBot = () => {
     setEditMessageText('');
   };
 
+  const handleImageError = (msgId: number) => {
+    console.error(`Failed to load image for message ${msgId}`);
+  };
+
   const handleSaveEdit = async (msg: ChatMessage) => {
     if (!editMessageText.trim() || !chatId) return;
 
@@ -218,6 +227,7 @@ const ChatBot = () => {
         console.error("Received empty messages array from API");
         return;
       }
+      console.log('New messages: ', newMessages);
       setAllMessages((prev) => [...prev, ...newMessages]);
       setCurrentMessages((prev) =>
         [...prev.filter((msg) => msg.id !== -1), ...newMessages]
@@ -384,15 +394,15 @@ const ChatBot = () => {
                 ? chosenBranches[idx]
                 : 0;
 
-              // Check if this message is being edited
               const isEditing = editingMessageId === msg.id;
+              const isImageMessage = msg.media_type === 'image' && msg.media;
 
               return (
                 <Box
                   key={msg.id}
                   sx={{
                     alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '85%',
+                    maxWidth: isImageMessage ? '90%' : '85%',
                     position: 'relative',
                   }}
                 >
@@ -455,42 +465,113 @@ const ChatBot = () => {
                             msg.role === 'user'
                               ? theme.palette.primary.contrastText
                               : theme.palette.text.primary,
-                          padding: 1.5,
+                          padding: isImageMessage ? 1 : 1.5,
                           borderRadius: 2,
                           borderTopLeftRadius: msg.role === 'user' ? 2 : 0,
                           borderTopRightRadius: msg.role === 'user' ? 0 : 2,
                           wordBreak: 'break-word',
                           whiteSpace: 'pre-wrap',
                           position: 'relative',
+                          maxWidth: '100%',
                         }}
                       >
-                        {msg.message}
+                        {isImageMessage ? (
+                          <Box sx={{ textAlign: 'center' }}>
+                            <Link
+                              href={msg.media}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              underline="hover"
+                              sx={{
+                                display: 'inline-block',
+                                mb: 1,
+                                color: msg.role === 'user'
+                                  ? theme.palette.primary.contrastText
+                                  : theme.palette.primary.main,
+                              }}
+                            >
+                              <ImageIcon sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+                              View full image
+                            </Link>
+                            <img
+                              src={msg.media}
+                              alt={msg.message || 'Generated image'}
+                              style={{
+                                maxWidth: '100%',
+                                borderRadius: '8px',
+                                display: 'block',
+                                margin: '0 auto',
+                                maxHeight: '400px',
+                                objectFit: 'contain',
+                              }}
+                              onError={() => handleImageError(msg.id)}
+                            />
+                            {msg.message && (
+                              <Typography
+                                variant="caption"
+                                display="block"
+                                sx={{
+                                  mt: 1,
+                                  fontStyle: 'italic',
+                                  color: msg.role === 'user'
+                                    ? 'rgba(255,255,255,0.9)'
+                                    : 'text.secondary'
+                                }}
+                              >
+                                {msg.message}
+                              </Typography>
+                            )}
+                            <Link
+                              href={msg.media}
+                              download
+                              sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                mt: 1,
+                                color: msg.role === 'user'
+                                  ? theme.palette.primary.contrastText
+                                  : theme.palette.primary.main,
+                                textDecoration: 'none',
+                                '&:hover': { textDecoration: 'underline' },
+                              }}
+                            >
+                              <DownloadIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                              Download image
+                            </Link>
+                          </Box>
+                        ) : (
+                          <Typography variant="body2">
+                            {msg.message}
+                          </Typography>
+                        )}
                       </Box>
 
-                      {/* Edit button for USER messages only */}
-                      {msg.role === 'user' && msg.id !== -1 && (
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditMessage(msg)}
-                          sx={{
-                            mt: 0.5,
-                            alignSelf: 'flex-end',
-                            color: theme.palette.text.secondary,
-                            opacity: 0.7,
-                            '&:hover': {
-                              opacity: 1,
-                              backgroundColor: 'transparent',
-                              color: theme.palette.primary.main,
-                            },
-                            padding: '4px',
-                          }}
-                          aria-label={`Edit message ${msg.id}`}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      )}
+                      {/* Edit button - only for text user messages */}
+                      {msg.role === 'user' &&
+                        msg.id !== -1 &&
+                        !isImageMessage && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditMessage(msg)}
+                            sx={{
+                              mt: 0.5,
+                              alignSelf: 'flex-end',
+                              color: theme.palette.text.secondary,
+                              opacity: 0.7,
+                              '&:hover': {
+                                opacity: 1,
+                                backgroundColor: 'transparent',
+                                color: theme.palette.primary.main,
+                              },
+                              padding: '4px',
+                            }}
+                            aria-label={`Edit message ${msg.id}`}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        )}
 
-                      {/* Branch navigation controls - ONLY shown when >1 branch available */}
+                      {/* Branch navigation - unchanged */}
                       {totalBranches > 1 && (
                         <Box
                           sx={{
@@ -538,11 +619,11 @@ const ChatBot = () => {
                         </Box>
                       )}
                     </>
-                  )}
+                    )}
                 </Box>
               );
-            })
-          )}
+          })
+            )}
 
           {loading && (
             <Box sx={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
@@ -574,20 +655,19 @@ const ChatBot = () => {
             backgroundColor: theme.palette.background.paper,
           }}
         >
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
             <TextField
               fullWidth
               variant="outlined"
               size="small"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder={`Message ${chatDetail.character_name}...`}
+              placeholder={`Message ${chatDetail.character_name}... (Type prompt for image generation)`}
               disabled={loading}
               multiline
               maxRows={3}
               onKeyDown={(event) => {
                 if (event.key !== 'Enter') return;
-                // Allow newline when Ctrl/Cmd is pressed (cross-platform)
                 if (event.ctrlKey || event.metaKey) {
                   event.preventDefault();
                   setInputMessage(prev => prev + '\n');
@@ -600,16 +680,41 @@ const ChatBot = () => {
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
                 },
+                flex: 1,
               }}
             />
+
+            {/* Generate Image Button */}
+            <Button
+              type="button"
+              variant="outlined"
+              onClick={handleGenerateImage}
+              disabled={loading}
+              sx={{
+                borderRadius: 2,
+                minWidth: { xs: 'auto', sm: 140 },
+                padding: '8px 16px',
+                whiteSpace: 'nowrap',
+                height: 'fit-content',
+                alignSelf: 'flex-end',
+              }}
+              startIcon={<ImageIcon />}
+            >
+              {isMobile ? 'Generate' : 'Generate Image'}
+            </Button>
+
+            {/* Send Message Button */}
             <Button
               type="submit"
               variant="contained"
               disabled={loading || !inputMessage.trim()}
               sx={{
                 borderRadius: 2,
-                minWidth: { xs: 'auto', sm: 100 },
+                minWidth: { xs: 'auto', sm: 120 },
                 padding: '8px 16px',
+                whiteSpace: 'nowrap',
+                height: 'fit-content',
+                alignSelf: 'flex-end',
               }}
               endIcon={<SendIcon />}
             >
