@@ -203,19 +203,19 @@ export function sendChatMessage(
   return api.post(url, payload)
     .then((response) => {
     const data = response.data;
-    const userMessage: ChatMessage = {
-      ...data.user_message,
-      conducted: dayjs(data.user_message.conducted)
-    };
-
-    const aiMessage: ChatMessage = {
-      ...data.ai_message,
-      conducted: dayjs(data.ai_message.conducted)
-    };
-
-    return {
-      user_message: userMessage,
-      ai_message: aiMessage
-    };
-  })
+    if (!Array.isArray(data?.messages)) {
+      console.error('Invalid API response:', data);
+      throw new Error('API response missing valid messages array');
+    }
+    const transformedMessages: ChatMessage[] = data.messages.map((msg: any) => {
+      return {
+        ...msg,
+        conducted: dayjs(msg.conducted),
+      } as ChatMessage;
+    });
+    return { messages: transformedMessages };
+  }).catch((error) => {
+      console.error('Chat message API error:', error);
+      throw error;
+    });
 }

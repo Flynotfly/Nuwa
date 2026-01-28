@@ -30,6 +30,8 @@ const ChatBot = () => {
   const { id } = useParams<{ id: string }>();
   const chatId = Number(id);
 
+  const mediaBaseURL = import.meta.env.VITE_BASE_URL;
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -477,24 +479,8 @@ const ChatBot = () => {
                       >
                         {isImageMessage ? (
                           <Box sx={{ textAlign: 'center' }}>
-                            <Link
-                              href={msg.media}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              underline="hover"
-                              sx={{
-                                display: 'inline-block',
-                                mb: 1,
-                                color: msg.role === 'user'
-                                  ? theme.palette.primary.contrastText
-                                  : theme.palette.primary.main,
-                              }}
-                            >
-                              <ImageIcon sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-                              View full image
-                            </Link>
                             <img
-                              src={msg.media}
+                              src={mediaBaseURL + msg.media}
                               alt={msg.message || 'Generated image'}
                               style={{
                                 maxWidth: '100%',
@@ -522,7 +508,7 @@ const ChatBot = () => {
                               </Typography>
                             )}
                             <Link
-                              href={msg.media}
+                              href={mediaBaseURL + msg.media}
                               download
                               sx={{
                                 display: 'inline-flex',
@@ -535,8 +521,8 @@ const ChatBot = () => {
                                 '&:hover': { textDecoration: 'underline' },
                               }}
                             >
-                              <DownloadIcon sx={{ fontSize: 16, mr: 0.5 }} />
-                              Download image
+                              <ImageIcon sx={{ fontSize: 16, mr: 0.5 }} />
+                              View full image
                             </Link>
                           </Box>
                         ) : (
