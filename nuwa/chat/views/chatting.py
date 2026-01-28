@@ -165,7 +165,8 @@ class ChatBotView(APIView):
 class GenerateImageView(APIView):
     def post(self, request):
         chat_id = request.data.get("chat_id")
-        previous_message_id = request.data.get("previous_message_id")
+        previous_message_id = request.data.get("previous_message_id", None)
+        user_message = request.data.get("message", None)
         if not chat_id:
             return Response(
                 {"error": "chat_id is required"},
@@ -184,9 +185,17 @@ class GenerateImageView(APIView):
                          "history beetwen user and character. "
                          "take into account the character's condition posture and "
                          "clothes at the end of the dialogue."
-                         "Character definition: "
-                         ""
                          "")
+        system_prompt_user_specific = ("The user wants to focus especially on these details. "
+                                       "Use the details, clothes, pose, and more from the following sentence:"
+                                       "")
+        system_prompt_continue = ("Character definition: "
+                                  ""
+                                  "")
+        if user_message:
+            system_prompt = system_prompt + system_prompt_user_specific + user_message.strip() + system_prompt_continue
+        else:
+            system_prompt = system_prompt + system_prompt_continue
         system_prompt = system_prompt + chat.system_prompt
         messages = [{"role": "system", "content": system_prompt}]
         if previous_message_id:
