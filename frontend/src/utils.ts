@@ -241,7 +241,7 @@ export function rebaseBranch(
     } else {
       // This is the critical part: mimic Python's two-step assignment
       currentList = item as ChatStructure;     // current_list = item
-      currentList = currentList[0] as ChatStructure; // current_list = current_list[0]
+      currentList = currentList[currentList.length - 1] as ChatStructure; // current_list = current_list[0]
       result.push(currentList[0] as number);
       j = 1;
     }
