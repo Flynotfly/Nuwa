@@ -131,6 +131,25 @@ const ChatBot = () => {
 
   };
 
+  const resolveMediaUrl = (mediaPath: string): string => {
+    if (!mediaPath || typeof mediaPath !== 'string') return '';
+    if (
+      mediaPath.startsWith('http://') ||
+      mediaPath.startsWith('https://') ||
+      mediaPath.startsWith('data:')
+    ) {
+      return mediaPath;
+    }
+    if (!mediaBaseURL) {
+      console.warn('VITE_BASE_URL not configured! Using raw media path:', mediaPath);
+      return mediaPath;
+    }
+    // Normalize: remove trailing slashes from base, leading slashes from path
+    const baseUrl = mediaBaseURL.trim().replace(/\/+$/, '');
+    const path = mediaPath.trim().replace(/^\/+/, '');
+    return path ? `${baseUrl}/${path}` : baseUrl;
+  };
+
   const handleEditMessage = (msg: ChatMessage) => {
     setEditingMessageId(msg.id);
     setEditMessageText(msg.message);
@@ -141,8 +160,8 @@ const ChatBot = () => {
     setEditMessageText('');
   };
 
-  const handleImageError = (msgId: number) => {
-    console.error(`Failed to load image for message ${msgId}`);
+  const handleImageError = (msgId: number, src: string) => {
+    console.error(`Failed to load image for message ${msgId} with source ${src}`);
   };
 
   const handleSaveEdit = async (msg: ChatMessage) => {
@@ -480,7 +499,7 @@ const ChatBot = () => {
                         {isImageMessage ? (
                           <Box sx={{ textAlign: 'center' }}>
                             <img
-                              src={mediaBaseURL + msg.media}
+                              src={resolveMediaUrl(msg.media)}
                               alt={msg.message || 'Generated image'}
                               style={{
                                 maxWidth: '100%',
@@ -490,7 +509,7 @@ const ChatBot = () => {
                                 maxHeight: '400px',
                                 objectFit: 'contain',
                               }}
-                              onError={() => handleImageError(msg.id)}
+                              onError={() => handleImageError(msg.id, resolveMediaUrl(msg.media))}
                             />
                             {msg.message && (
                               <Typography
@@ -508,7 +527,7 @@ const ChatBot = () => {
                               </Typography>
                             )}
                             <Link
-                              href={mediaBaseURL + msg.media}
+                              href={resolveMediaUrl(msg.media)}
                               download
                               sx={{
                                 display: 'inline-flex',
