@@ -281,7 +281,7 @@ class GenerateImageView(APIView):
             filename = result.get("filename")
 
             message_history = [] if not previous_message_id else all_message_ids
-            new_message = Message(
+            new_message = Message.objects.create(
                 owner=request.user,
                 chat=chat,
                 role="assistant",
@@ -295,6 +295,15 @@ class GenerateImageView(APIView):
                     "positive_prompt": positive_prompt,
                 }
             )
+            chat.last_message = new_message
+            print(f"{chat.structure=}, {previous_message_id=}, {new_message.pk=}, {new_message.history=}")
+            chat.structure = update_chat_structure(
+                chat.structure,
+                previous_message_id if previous_message_id else None,
+                new_message.pk,
+                new_message.history,
+            )
+            chat.save()
             new_message.media.save(filename, image_content, save=True)
             serialzier = MessageSerializer(new_message)
             return Response({
