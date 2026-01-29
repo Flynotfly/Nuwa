@@ -4,6 +4,7 @@ import { AnonymousRoute } from "./auth/AnonymousRoute";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 
 const CharactersList = lazy(() => import('./components/CharactersList'));
+const ChatsList = lazy(() => import('./components/ChatsList'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
 const SignIn = lazy(() => import('./components/SignIn'));
 const SignUp = lazy(() => import('./components/SignUp'));
@@ -18,6 +19,10 @@ function createRouter() {
         {
           index: true,
           element: <CharactersList />,
+        },
+        {
+          path: '/chats',
+          element: <ProtectedRoute><ChatsList /></ProtectedRoute>,
         },
         {
           path: '/chat/:id',
