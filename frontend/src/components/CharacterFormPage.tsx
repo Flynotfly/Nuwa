@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -23,7 +23,7 @@ import {
   Save as SaveIcon,
   Delete as DeleteIcon,
   ArrowBack as BackIcon,
-} from '@mui/icons-material'; // Removed Visibility icons
+} from '@mui/icons-material';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import {
@@ -34,6 +34,15 @@ import {
 } from '../api/api';
 import { CharacterFull, NewCharacterFull } from '../types/character';
 
+// Initial form state constant
+const INITIAL_FORM_STATE: NewCharacterFull = {
+  name: '',
+  description: '',
+  system_prompt: '',
+  is_private: false,
+  is_hidden_prompt: false,
+};
+
 const CharacterFormPage = () => {
   const { id } = useParams<{ id?: string }>();
   const isEditMode = !!id;
@@ -41,13 +50,7 @@ const CharacterFormPage = () => {
   const location = useLocation();
 
   // Form state
-  const [formData, setFormData] = useState<NewCharacterFull>({
-    name: '',
-    description: '',
-    system_prompt: '',
-    is_private: false,
-    is_hidden_prompt: false,
-  });
+  const [formData, setFormData] = useState<NewCharacterFull>(INITIAL_FORM_STATE);
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -58,13 +61,27 @@ const CharacterFormPage = () => {
     severity: 'success',
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  // REMOVED: showSystemPrompt state - prompt always visible
-  const [ownershipVerified, setOwnershipVerified] = useState(true);
-  // ADDED: Deletion confirmation state
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [ownershipVerified, setOwnershipVerified] = useState(true);
 
-  // Load character data in edit mode
+  // Track previous ID to detect route changes within same component
+  const prevIdRef = useRef<string | undefined>(undefined);
+
+  // CRITICAL FIX: Reset form when route changes (edit → create or edit → edit different ID)
   useEffect(() => {
+    // Detect when we transition between routes using the same component
+    const prevId = prevIdRef.current;
+    const currentId = id;
+
+    // Reset form if:
+    // 1. Going from edit mode to create mode (id existed → now undefined)
+    // 2. Going from one edit page to another (different IDs)
+    if ((prevId && !currentId) || (prevId && currentId && prevId !== currentId)) {
+      setFormData(INITIAL_FORM_STATE);
+      setFormError(null);
+    }
+
+    // Also load character data if in edit mode with a valid ID
     if (isEditMode && id) {
       setLoading(true);
       getCharacterById(Number(id))
@@ -83,7 +100,10 @@ const CharacterFormPage = () => {
           setLoading(false);
         });
     }
-  }, [id, isEditMode]);
+
+    // Update ref for next render
+    prevIdRef.current = id;
+  }, [id, isEditMode]); // Dependencies ensure this runs on route param changes
 
   // Handle input changes
   const handleChange = (
@@ -145,9 +165,9 @@ const CharacterFormPage = () => {
     }
   };
 
-  // Delete handling - FIXED VALIDATION
+  // Delete handling
   const handleDeleteClick = () => {
-    setDeleteConfirmationText(''); // Reset confirmation text
+    setDeleteConfirmationText('');
     setDeleteDialogOpen(true);
   };
 
@@ -249,7 +269,7 @@ const CharacterFormPage = () => {
               />
             </Grid>
 
-            {/* System Prompt Field - ALWAYS VISIBLE, NO TOGGLE */}
+            {/* System Prompt Field - ALWAYS VISIBLE */}
             <Grid item xs={12}>
               <Typography variant="subtitle1" fontWeight={500} sx={{ mb: 1 }}>
                 System Prompt *
@@ -258,7 +278,7 @@ const CharacterFormPage = () => {
                 fullWidth
                 multiline
                 rows={8}
-                value={formData.system_prompt} // ALWAYS SHOW CLEAR TEXT
+                value={formData.system_prompt}
                 onChange={handleChange('system_prompt')}
                 error={!!formError && !formData.system_prompt.trim()}
                 helperText={
@@ -302,7 +322,6 @@ const CharacterFormPage = () => {
                   sx={{ flex: 1 }}
                 />
 
-                {/* NOTE: This switch remains for backend behavior, but UI always shows prompt */}
                 <FormControlLabel
                   control={
                     <Switch
@@ -396,7 +415,7 @@ const CharacterFormPage = () => {
         </form>
       </Paper>
 
-      {/* Delete Confirmation Dialog - WITH VALIDATION */}
+      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
