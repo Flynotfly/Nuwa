@@ -1,13 +1,13 @@
 import base64
 import json
-import requests
 import os
 import random
 import time
 
+import requests
 from django.conf import settings
-from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.response import Response
 
 
 def update_chat_structure(structure, current_id, new_id, path):
@@ -45,8 +45,8 @@ def update_chat_structure(structure, current_id, new_id, path):
                     current_list.append([new_id])
                     return structure
                 else:
-                    cutted = current_list[j + 1:]
-                    del current_list[j + 1:]
+                    cutted = current_list[j + 1 :]
+                    del current_list[j + 1 :]
                     current_list.append(list())
                     current_list[-1].append(cutted)
                     current_list[-1].append([new_id])
@@ -80,8 +80,8 @@ def update_chat_structure(structure, current_id, new_id, path):
                     current_list.append([new_id])
                     return structure
                 else:
-                    cutted = current_list[j + 1:]
-                    del current_list[j + 1:]
+                    cutted = current_list[j + 1 :]
+                    del current_list[j + 1 :]
                     current_list.append(list())
                     current_list[-1].append(cutted)
                     current_list[-1].append([new_id])
@@ -234,9 +234,7 @@ def generate_image(positive_prompt):
                     )
                     img_resp.raise_for_status()
 
-                    image_base64 = base64.b64encode(img_resp.content).decode(
-                        "utf-8"
-                    )
+                    image_base64 = base64.b64encode(img_resp.content).decode("utf-8")
 
                     return {
                         "image_base64": image_base64,

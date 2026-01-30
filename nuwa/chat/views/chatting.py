@@ -3,10 +3,10 @@ import json
 import os
 import random
 import time
-import requests
 
-from django.core.files.base import ContentFile
+import requests
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.utils import timezone
 from ollama import Client
 from openai import OpenAI
@@ -15,8 +15,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chat.models import Chat, Message
-from chat.utils import update_chat_structure, generate_image
 from chat.serializers.message import MessageSerializer
+from chat.utils import generate_image, update_chat_structure
 
 client = Client(
     host="https://ollama.com",
@@ -94,9 +94,9 @@ class ChatBotView(APIView):
         }
         try:
             response = client.chat(**payload)
-                # response = client.chat.completions.create(model=model, messages=messages)
+            # response = client.chat.completions.create(model=model, messages=messages)
             ai_response = response.message.content
-                # ai_response = response.choices[0].message.content
+            # ai_response = response.choices[0].message.content
             # ai_response = "Hello user!"
         except requests.exceptions.RequestException as e:
             return Response(
@@ -139,7 +139,7 @@ class ChatBotView(APIView):
             info={
                 "model": model,
                 "think": think,
-            }
+            },
         )
         chat.last_message = ai_message
         chat.last_message_text = ai_message.message
@@ -180,22 +180,29 @@ class GenerateImageView(APIView):
                 {"error": "Chat id is invalid"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        system_prompt = ("Write positive promt for ai image generator. "
-                         "It should containts keywords or key phrases separates by comma. "
-                         "Do not write anything else. "
-                         "You will be given prompt defenition and chat "
-                         "history beetwen user and character. "
-                         "take into account the character's condition posture and "
-                         "clothes at the end of the dialogue."
-                         "")
-        system_prompt_user_specific = ("The user wants to focus especially on these details. "
-                                       "Use the details, clothes, pose, and more from the following sentence:"
-                                       "")
-        system_prompt_continue = ("Character definition: "
-                                  ""
-                                  "")
+        system_prompt = (
+            "Write positive promt for ai image generator. "
+            "It should containts keywords or key phrases separates by comma. "
+            "Do not write anything else. "
+            "You will be given prompt defenition and chat "
+            "history beetwen user and character. "
+            "take into account the character's condition posture and "
+            "clothes at the end of the dialogue."
+            ""
+        )
+        system_prompt_user_specific = (
+            "The user wants to focus especially on these details. "
+            "Use the details, clothes, pose, and more from the following sentence:"
+            ""
+        )
+        system_prompt_continue = "Character definition: " "" ""
         if user_message:
-            system_prompt = system_prompt + system_prompt_user_specific + user_message.strip() + system_prompt_continue
+            system_prompt = (
+                system_prompt
+                + system_prompt_user_specific
+                + user_message.strip()
+                + system_prompt_continue
+            )
         else:
             system_prompt = system_prompt + system_prompt_continue
         system_prompt = system_prompt + chat.system_prompt
@@ -245,9 +252,7 @@ class GenerateImageView(APIView):
             )
 
         try:
-            result = generate_image(
-                positive_prompt=positive_prompt
-            )
+            result = generate_image(positive_prompt=positive_prompt)
 
         except FileNotFoundError:
             return Response(
@@ -293,10 +298,12 @@ class GenerateImageView(APIView):
                 info={
                     "model": "realismByStableYogi_sd15V9",
                     "positive_prompt": positive_prompt,
-                }
+                },
             )
             chat.last_message = new_message
-            print(f"{chat.structure=}, {previous_message_id=}, {new_message.pk=}, {new_message.history=}")
+            print(
+                f"{chat.structure=}, {previous_message_id=}, {new_message.pk=}, {new_message.history=}"
+            )
             chat.structure = update_chat_structure(
                 chat.structure,
                 previous_message_id if previous_message_id else None,
@@ -306,9 +313,9 @@ class GenerateImageView(APIView):
             chat.save()
             new_message.media.save(filename, image_content, save=True)
             serialzier = MessageSerializer(new_message)
-            return Response({
-                "messages": [serialzier.data]
-            }, status=status.HTTP_201_CREATED)
+            return Response(
+                {"messages": [serialzier.data]}, status=status.HTTP_201_CREATED
+            )
 
         except Exception as e:
             return Response(

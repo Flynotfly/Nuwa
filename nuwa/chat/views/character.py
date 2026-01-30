@@ -5,10 +5,11 @@ from rest_framework.response import Response
 
 from chat.models import Character
 from chat.permissions import IsOwnerOrReadOnly
-from chat.serializers.character import CharacterFullSerializer, CharacterNameSerializer
+from chat.serializers.character import (CharacterFullSerializer,
+                                        CharacterNameSerializer)
 
 
-class CharaterListCreateView(generics.ListCreateAPIView):
+class CharacterListCreateView(generics.ListCreateAPIView):
     def get_serializer_class(self):
         if self.request.method == "POST":
             return CharacterFullSerializer
@@ -20,7 +21,9 @@ class CharaterListCreateView(generics.ListCreateAPIView):
         return [AllowAny()]
 
     def get_queryset(self):
-        only_user_param = self.request.query_params.get("only_user", "false").strip().lower()
+        only_user_param = (
+            self.request.query_params.get("only_user", "false").strip().lower()
+        )
         if only_user_param == "true":
             if self.request.user.is_authenticated:
                 return Character.objects.filter(
