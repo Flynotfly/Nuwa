@@ -479,7 +479,8 @@ const Layout = () => {
     if (location.pathname.startsWith('/chat')) return 'Chat';
     if (location.pathname.startsWith('/chats')) return 'Your Conversations';
     if (location.pathname.startsWith('/my-characters')) return 'My Characters';
-    if (location.pathname.startsWith('/create-character')) return 'Create Character';
+    if (location.pathname.startsWith('/characters/new')) return 'Create Character';
+    if (location.pathname.startsWith('/characters/edit')) return 'Edit Character';
     if (location.pathname.startsWith('/settings')) return 'Settings';
 
     const currentItem = navigationItems.find(item =>
