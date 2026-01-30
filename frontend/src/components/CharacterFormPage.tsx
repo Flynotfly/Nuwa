@@ -23,9 +23,7 @@ import {
   Save as SaveIcon,
   Delete as DeleteIcon,
   ArrowBack as BackIcon,
-  Visibility as VisibilityIcon,
-  VisibilityOff as VisibilityOffIcon,
-} from '@mui/icons-material';
+} from '@mui/icons-material'; // Removed Visibility icons
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import {
@@ -60,8 +58,10 @@ const CharacterFormPage = () => {
     severity: 'success',
   });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
+  // REMOVED: showSystemPrompt state - prompt always visible
   const [ownershipVerified, setOwnershipVerified] = useState(true);
+  // ADDED: Deletion confirmation state
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
 
   // Load character data in edit mode
   useEffect(() => {
@@ -130,7 +130,6 @@ const CharacterFormPage = () => {
       } else {
         const newChar = await createCharacter(formData);
         showSnackbar('Character created successfully!', 'success');
-        // Redirect to edit page of new character after brief delay
         setTimeout(() => navigate(`/characters/edit/${newChar.id}`), 1000);
       }
     } catch (err) {
@@ -146,9 +145,19 @@ const CharacterFormPage = () => {
     }
   };
 
-  // Delete handling
-  const handleDeleteClick = () => setDeleteDialogOpen(true);
+  // Delete handling - FIXED VALIDATION
+  const handleDeleteClick = () => {
+    setDeleteConfirmationText(''); // Reset confirmation text
+    setDeleteDialogOpen(true);
+  };
+
   const handleDeleteConfirm = async () => {
+    // Critical validation: must match exactly (case-sensitive)
+    if (deleteConfirmationText.trim() !== formData.name.trim()) {
+      setFormError('Character name does not match. Deletion cancelled.');
+      return;
+    }
+
     if (!isEditMode || !id) return;
 
     setLoading(true);
@@ -159,11 +168,16 @@ const CharacterFormPage = () => {
     } catch (err) {
       console.error('Delete failed:', err);
       showSnackbar('Failed to delete character. It might be in use.', 'error');
+    } finally {
       setLoading(false);
+      setDeleteDialogOpen(false);
     }
-    setDeleteDialogOpen(false);
   };
-  const handleDeleteCancel = () => setDeleteDialogOpen(false);
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setDeleteConfirmationText('');
+  };
 
   // Utility functions
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
@@ -194,7 +208,7 @@ const CharacterFormPage = () => {
         </Box>
 
         {formError && (
-          <Alert severity="error" sx={{ mb: 2.5 }}>
+          <Alert severity="error" sx={{ mb: 2.5 }} onClose={() => setFormError(null)}>
             {formError}
           </Alert>
         )}
@@ -235,27 +249,16 @@ const CharacterFormPage = () => {
               />
             </Grid>
 
-            {/* System Prompt Field */}
+            {/* System Prompt Field - ALWAYS VISIBLE, NO TOGGLE */}
             <Grid item xs={12}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle1" fontWeight={500}>
-                  System Prompt *
-                </Typography>
-                <Tooltip title={showSystemPrompt ? 'Hide prompt content' : 'Show prompt content'}>
-                  <IconButton
-                    size="small"
-                    onClick={() => setShowSystemPrompt(!showSystemPrompt)}
-                    disabled={loading}
-                  >
-                    {showSystemPrompt ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                  </IconButton>
-                </Tooltip>
-              </Box>
+              <Typography variant="subtitle1" fontWeight={500} sx={{ mb: 1 }}>
+                System Prompt *
+              </Typography>
               <TextField
                 fullWidth
                 multiline
                 rows={8}
-                value={showSystemPrompt ? formData.system_prompt : formData.system_prompt.replace(/./g, '•')}
+                value={formData.system_prompt} // ALWAYS SHOW CLEAR TEXT
                 onChange={handleChange('system_prompt')}
                 error={!!formError && !formData.system_prompt.trim()}
                 helperText={
@@ -269,9 +272,6 @@ const CharacterFormPage = () => {
                 sx={{
                   fontFamily: 'monospace',
                   fontSize: '0.92rem',
-                  '& .MuiInputBase-input': {
-                    letterSpacing: showSystemPrompt ? 'normal' : '0.15em'
-                  }
                 }}
               />
             </Grid>
@@ -302,6 +302,7 @@ const CharacterFormPage = () => {
                   sx={{ flex: 1 }}
                 />
 
+                {/* NOTE: This switch remains for backend behavior, but UI always shows prompt */}
                 <FormControlLabel
                   control={
                     <Switch
@@ -317,7 +318,7 @@ const CharacterFormPage = () => {
                         Hide Prompt in UI
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Prevent accidental exposure during screen sharing
+                        Prevent accidental exposure during screen sharing (applies outside this form)
                       </Typography>
                     </Box>
                   }
@@ -395,7 +396,7 @@ const CharacterFormPage = () => {
         </form>
       </Paper>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog - WITH VALIDATION */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
@@ -414,19 +415,30 @@ const CharacterFormPage = () => {
             This action cannot be undone. All associated chat history will be preserved but
             cannot be continued with this character.
           </Alert>
-          <Typography>
+          <Typography sx={{ mb: 1 }}>
             Type the character's name below to confirm deletion:
           </Typography>
           <TextField
             fullWidth
             margin="dense"
-            placeholder={formData.name}
-            error
-            helperText="Names must match exactly"
+            value={deleteConfirmationText}
+            onChange={(e) => setDeleteConfirmationText(e.target.value)}
+            error={deleteConfirmationText.trim() !== formData.name.trim()}
+            helperText={
+              deleteConfirmationText.trim() !== formData.name.trim()
+                ? `Must exactly match: "${formData.name}"`
+                : 'Name matches - confirmation valid'
+            }
+            placeholder={`Type "${formData.name}" exactly`}
+            autoFocus
           />
         </DialogContent>
         <DialogActions sx={{ p: 2.5 }}>
-          <Button onClick={handleDeleteCancel} disabled={loading}>
+          <Button
+            onClick={handleDeleteCancel}
+            disabled={loading}
+            sx={{ fontWeight: 500 }}
+          >
             Cancel
           </Button>
           <Button
@@ -434,7 +446,10 @@ const CharacterFormPage = () => {
             variant="contained"
             color="error"
             startIcon={loading ? <CircularProgress size={20} /> : <DeleteIcon />}
-            disabled={loading}
+            disabled={
+              loading ||
+              deleteConfirmationText.trim() !== formData.name.trim()
+            }
             sx={{ fontWeight: 600, px: 3 }}
           >
             {loading ? 'Deleting...' : 'Permanently Delete'}
@@ -447,22 +462,17 @@ const CharacterFormPage = () => {
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleSnackbarClose}
-        message={snackbar.message}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{
-          mb: 8,
-          '& .MuiAlert-root': {
-            width: '100%',
-            borderRadius: 2,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-          }
-        }}
+        sx={{ mb: 8 }}
       >
         <Alert
           onClose={handleSnackbarClose}
           severity={snackbar.severity}
           sx={{
+            width: '100%',
+            borderRadius: 2,
             fontWeight: 500,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             '& .MuiAlert-icon': { fontSize: 24 }
           }}
         >
