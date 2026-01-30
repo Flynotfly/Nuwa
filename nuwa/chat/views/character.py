@@ -20,6 +20,14 @@ class CharaterListCreateView(generics.ListCreateAPIView):
         return [AllowAny()]
 
     def get_queryset(self):
+        only_user_param = self.request.query_params.get("only_user", "false").strip().lower()
+        if only_user_param == "true":
+            if self.request.user.is_authenticated:
+                return Character.objects.filter(
+                    owner=self.request.user,
+                    is_active=True,
+                )
+            return Character.objects.none()
         return Character.objects.filter(is_private=False, is_active=True)
 
     def perform_create(self, serializer):
