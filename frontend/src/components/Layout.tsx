@@ -66,7 +66,7 @@ const navigationConfig = {
     {
       label: 'Create Character',
       icon: <AddIcon />,
-      path: '/create-character',
+      path: '/characters/new',
       description: 'Design your own AI companion',
       variant: 'primary'
     },

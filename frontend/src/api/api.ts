@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 import {SignInData, TokenResponse, SignUpData, SessionData, ShortUserInfo} from "../auth/types";
-import {CharacterShort} from "../types/character";
-import {ChatMessage, ChatMessageResponse, ChatTextResponse} from "../types/chatting";
+import {CharacterFull, CharacterShort, NewCharacterFull} from "../types/character";
+import {ChatMessage, ChatTextResponse} from "../types/chatting";
 import { getTokens, saveTokens, clearTokens } from "./utils";
 import {ChatDetail, ChatListElement} from "../types/chat";
 import dayjs from 'dayjs';
@@ -155,7 +155,27 @@ export function getAllCharacters(only_user?: boolean | null): Promise<CharacterS
     params.only_user = 'false';
   }
   return api.get(URLs.CHARACTER, { params })
-    .then((response) => response.data)
+    .then((response) => response.data);
+}
+
+export function getCharacterById(id: number): Promise<CharacterFull> {
+  return api.get(URLs.CHARACTER + '/' + id)
+    .then((response) => response.data);
+}
+
+export function createCharacter(character: NewCharacterFull): Promise<CharacterFull> {
+  return api.post(URLs.CHARACTER, character)
+    .then((response) => response.data);
+}
+
+export function updateCharacter(id: number, character: CharacterFull) {
+  return api.put(URLs.CHARACTER + '/' + id, character)
+    .then((response) => response.data);
+}
+
+export function destroyCharacter(id: number): Promise<void> {
+  return api.delete(URLs.CHARACTER + '/' + id)
+    .then(() => undefined);
 }
 
 // --- Chat and messages---
