@@ -147,8 +147,14 @@ export function getSession(): Promise<SessionData> {
 
 // --- Character ---
 
-export function getAllCharacters(): Promise<CharacterShort[]> {
-  return api.get(URLs.CHARACTER)
+export function getAllCharacters(only_user?: boolean | null): Promise<CharacterShort[]> {
+  const params: Record<string, string> = {};
+  if (only_user === true) {
+    params.only_user = 'true';
+  } else if (only_user === false) {
+    params.only_user = 'false';
+  }
+  return api.get(URLs.CHARACTER, { params })
     .then((response) => response.data)
 }
 
