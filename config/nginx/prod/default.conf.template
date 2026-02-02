@@ -1,0 +1,59 @@
+upstream uwsgi_app {
+	server unix:/run/uwsgi/uwsgi_app.sock;
+}
+
+server {
+	listen      80;
+	server_name backend.nuwa.orange-city.ru;
+	    
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+	listen              443 ssl;
+	ssl_certificate     /etc/letsencrypt/live/backend.nuwa.orange-city.ru/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/backend.nuwa.orange-city.ru/privkey.pem;
+	server_name         backend.nuwa.orange-city.ru;
+	
+	error_log           stderr warn;
+	access_log          /dev/stdout main;
+	
+	location / {
+		include         /etc/nginx/uwsgi_params;
+		uwsgi_pass      uwsgi_app;
+	}
+	
+	location /static/ {
+		alias           /code/static/;
+	}
+	
+	location /media/ {
+		alias           /code/media/;
+	}
+}
+
+server {
+	listen      80;
+	server_name nuwa.orange-city.ru;
+	    
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+	listen              443 ssl;
+	ssl_certificate     /etc/letsencrypt/live/nuwa.orange-city.ru/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/nuwa.orange-city.ru/privkey.pem;
+	server_name         nuwa.orange-city.ru;
+	
+	error_log           stderr warn;
+	access_log          /dev/stdout main;
+	
+	location / {
+		root            /usr/share/nginx/html;
+		try_files       $uri /index.html;
+	}
+}

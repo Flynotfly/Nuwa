@@ -1,0 +1,33 @@
+upstream uwsgi_app {
+	server unix:/run/uwsgi/uwsgi_app.sock;
+}
+
+server {
+	listen 8000;
+	server_name localhost;
+	
+	error_log stderr warn;
+	access_log /dev/stdout main;
+	
+	location / {
+		include /etc/nginx/uwsgi_params;
+		uwsgi_pass uwsgi_app;
+	}
+	
+	location /static/ {
+		alias /code/static/;
+	}
+}
+
+server {
+	listen 5173;
+	server_name localhost;
+	
+	error_log stderr warn;
+	access_log /dev/stdout main;
+	
+	location / {
+		root /usr/share/nginx/html;
+		try_files $uri /index.html;
+	}
+}

@@ -1,0 +1,45 @@
+services:
+    db:
+        image: postgres:16.10
+        restart: always
+        volumes:
+            - ./data/db:/var/lib/postgres/data
+        environment:
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+    web:
+        image: ${DOCKERHUB_USERNAME}/nuwa:${TAG}
+        command: ["./wait-for-it.sh", "db:5432", "--", "uwsgi", "--ini", "/code/config/uwsgi/uwsgi.ini"]
+        restart: always
+        volumes:
+            - ./config/uwsgi:/code/config/uwsgi
+            - uwsgi_socket:/run/uwsgi
+            - static_volume:/code/static
+            - media_volume:/code/media
+        env_file:
+            - .env
+        environment:
+            - DJANGO_SETTINGS_MODULE=nuwa.settings.prod
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+        depends_on:
+            - db
+    nginx:
+        image: ${DOCKERHUB_USERNAME}/nuwa-nginx:${TAG}
+        restart: always
+        volumes:
+            - uwsgi_socket:/run/uwsgi:ro
+            - static_volume:/code/static:ro
+            - media_volume:/code/media:ro
+            - /etc/letsencrypt:/etc/letsencrypt:ro
+        ports:
+            - "80:80"
+            - "443:443"
+        depends_on:
+            - web
+volumes:
+    uwsgi_socket:
+    static_volume:
+    media_volume:
