@@ -10,7 +10,7 @@ services:
             - POSTGRES_PASSWORD=postgres
     web:
         image: nuwa:latest
-        command: ["./wait-for-it.sh", "db:5432", "--", "uwsgi", "--ini", "/code/config/uwsgi/uwsgi.ini"]
+        command: ["./wait-for-it.sh", "db:5432", "--", "uv", "run", "uwsgi", "--ini", "/code/config/uwsgi/uwsgi.ini"]
         restart: always
         volumes:
             - ./config/uwsgi:/code/config/uwsgi
@@ -25,7 +25,7 @@ services:
         depends_on:
             - db
     nginx:
-        image: nuwa_nginx:latest
+        image: nuwa-nginx:latest
         restart: always
         volumes:
             - uwsgi_socket:/run/uwsgi:ro

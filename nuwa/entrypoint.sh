@@ -5,9 +5,9 @@ mkdir -p /run/uwsgi
 chown www-data:www-data /run/uwsgi
 
 echo "Running database migrations..."
-python manage.py migrate --noinput
+uv run python manage.py migrate --noinput
 
 echo "Running collect static..."
-python manage.py collectstatic --noinput
+uv run python manage.py collectstatic --noinput
 
 exec "$@"
