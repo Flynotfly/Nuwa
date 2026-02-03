@@ -47,11 +47,8 @@ class RegisterView(APIView):
     def post(self, request):
         username = request.data.get("username")
         password = request.data.get("password")
-        email = request.data.get("email")
-        first_name = request.data.get("firstName")
-        last_name = request.data.get("lastName")
 
-        if not username or not password or not email or not first_name or not last_name:
+        if not username or not password:
             return Response(
                 {
                     "error": "Username, password, email, firstName and lastName are required."
@@ -62,9 +59,6 @@ class RegisterView(APIView):
             user = User.objects.create_user(
                 username=username,
                 password=password,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
             )
             return Response(status=status.HTTP_201_CREATED)
         except IntegrityError:
