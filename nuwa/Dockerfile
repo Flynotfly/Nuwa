@@ -4,7 +4,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 WORKDIR /code
 COPY pyproject.toml uv.lock .
-RUN uv sync
+RUN uv add --frozen uwsgi
+RUN uv sync --no-dev
 COPY . .
 RUN chmod +x /code/wait-for-it.sh
 RUN chmod +x /code/entrypoint.sh
