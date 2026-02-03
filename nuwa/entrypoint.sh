@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+./wait-for-it.sh db:5432 -t 30
+
 mkdir -p /run/uwsgi
 chown www-data:www-data /run/uwsgi
 

@@ -1,6 +1,6 @@
 services:
     db:
-        image: postgres:16.10
+        image: postgres:18.1-alpine3.23
         restart: always
         volumes:
             - ./data/db:/var/lib/postgres/data
@@ -10,7 +10,7 @@ services:
             - POSTGRES_PASSWORD=postgres
     web:
         image: ${DOCKERHUB_USERNAME}/nuwa:${TAG}
-        command: ["./wait-for-it.sh", "db:5432", "--", "uv", "run", "uwsgi", "--ini", "/code/config/uwsgi/uwsgi.ini"]
+        command: ["uv", "run", "uwsgi", "--ini", "/code/config/uwsgi/uwsgi.ini"]
         restart: always
         volumes:
             - ./config/uwsgi:/code/config/uwsgi
