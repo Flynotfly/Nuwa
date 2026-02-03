@@ -113,7 +113,7 @@ const ChatsList = () => {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => navigate('/characters')}
+            onClick={() => navigate('/')}
           >
             Browse Characters
           </Button>
