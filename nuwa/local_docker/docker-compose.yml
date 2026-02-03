@@ -1,0 +1,12 @@
+services:
+    db:
+        image: postgres:18.1-alpine3.23
+        restart: always
+        volumes:
+            - ./data/db:/var/lib/postgres/data
+        environment:
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+        ports:
+            - "5441:5432"
