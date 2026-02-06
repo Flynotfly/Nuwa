@@ -13,8 +13,8 @@ server {
 
 server {
 	listen              443 ssl;
-	ssl_certificate     /etc/letsencrypt/live/backend.nuwa.orange-city.ru/fullchain.pem;
-	ssl_certificate_key /etc/letsencrypt/live/backend.nuwa.orange-city.ru/privkey.pem;
+	ssl_certificate     /etc/letsencrypt/live/nuwa.orange-city.ru/fullchain.pem;
+	ssl_certificate_key /etc/letsencrypt/live/nuwa.orange-city.ru/privkey.pem;
 	server_name         backend.nuwa.orange-city.ru;
 	
 	error_log           stderr warn;
