@@ -62,7 +62,7 @@ jobs:
       - name: Build and push web image
         uses: docker/build-push-action@v3
         with:
-          context: drink_count
+          context: nuwa
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/nuwa:${{ needs.version.outputs.new_version }}
           cache-from: type=gha
