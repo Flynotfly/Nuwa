@@ -1,7 +1,7 @@
 services:
     db:
         image: postgres:18.1-alpine3.23
-        restart: always
+        restart: no
         volumes:
             - ./data/db:/var/lib/postgres/data
         environment:

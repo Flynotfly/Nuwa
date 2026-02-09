@@ -1,7 +1,7 @@
 services:
     db:
         image: postgres:18.1-alpine3.23
-        restart: always
+        restart: no
         volumes:
             - ./data/db:/var/lib/postgres/data
         environment:
@@ -11,7 +11,7 @@ services:
     web:
         image: nuwa:latest
         command: ["uv", "run", "--no-sync", "uwsgi", "--ini", "/code/config/uwsgi/uwsgi.ini"]
-        restart: always
+        restart: no
         volumes:
             - ./config/uwsgi:/code/config/uwsgi
             - uwsgi_socket:/run/uwsgi
@@ -26,7 +26,7 @@ services:
             - db
     nginx:
         image: nuwa-nginx:latest
-        restart: always
+        restart: no
         volumes:
             - uwsgi_socket:/run/uwsgi:ro
         ports:
