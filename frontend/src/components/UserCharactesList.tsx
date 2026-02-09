@@ -36,7 +36,7 @@ const UserCharactersList = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAllCharacters()
+    getAllCharacters(true)
       .then(setCharacters)
       .catch(() => setError('Failed to load characters'))
       .finally(() => setLoading(false));
