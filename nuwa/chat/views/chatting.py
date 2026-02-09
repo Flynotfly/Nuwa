@@ -125,7 +125,7 @@ class ChatBotView(APIView):
             chat.structure,
             previous_message_id if previous_message_id else None,
             user_message.pk,
-            user_message.history,
+            user_message.history[:-1] if len(user_message.history) > 0 else [],
         )
         ai_history = message_history + [user_message.pk]
         ai_message = Message.objects.create(
@@ -148,7 +148,7 @@ class ChatBotView(APIView):
             structure,
             user_message.pk,
             ai_message.pk,
-            ai_message.history,
+            user_message.history,
         )
         chat.save()
         user_serializer = MessageSerializer(user_message)
@@ -308,7 +308,7 @@ class GenerateImageView(APIView):
                 chat.structure,
                 previous_message_id if previous_message_id else None,
                 new_message.pk,
-                new_message.history,
+                new_message.history[:-1] if len(message_history) > 0 else [],
             )
             chat.save()
             new_message.media.save(filename, image_content, save=True)
