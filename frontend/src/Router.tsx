@@ -4,7 +4,7 @@ import { AnonymousRoute } from "./auth/AnonymousRoute";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 
 const CharactersList = lazy(() => import('./components/CharactersList'));
-const UserCharactersList = lazy(() => import('./components/UserCharactesList'));
+const UserCharactersList = lazy(() => import('./components/UserCharactersList'));
 const CharacterFormPage = lazy(() => import('./components/CharacterFormPage'));
 const ChatsList = lazy(() => import('./components/ChatsList'));
 const ChatBot = lazy(() => import('./components/ChatBot'));
