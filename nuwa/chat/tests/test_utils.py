@@ -62,17 +62,22 @@ class UpdateChatStructureTestCase(TestCase):
     def test_branch_root(self):
         structure = [0, 1, 2]
         result = update_chat_structure(structure, current_id=None, new_id=3, path=[])
-        self.assertEqual(result, [[0, 1, 2], [3]])
+        self.assertEqual(result, [[[0, 1, 2], [3]]])
 
     def test_branch_root_2(self):
-        structure = [[0, 1], [2]]
+        structure = [[[0, 1], [2]]]
         result = update_chat_structure(structure, current_id=None, new_id=3, path=[])
-        self.assertEqual(result, [[0, 1], [2], [3]])
+        self.assertEqual(result, [[[0, 1], [2], [3]]])
 
     def test_cutted(self):
         structure = [[[0, 1], [2, 3, 4]]]
         result = update_chat_structure(structure, current_id=2, new_id=5, path=[])
         self.assertEqual(result, [[[0, 1], [2, [[3, 4], [5]]]]])
+
+    def test_weird(self):
+        structure = [[[1, 2], [7]]]
+        result = update_chat_structure(structure, current_id=7, new_id=8, path=[7])
+        self.assertEqual(result, [[[1, 2], [7, 8]]])
 
 
 class FindBranchesTestCase(TestCase):
