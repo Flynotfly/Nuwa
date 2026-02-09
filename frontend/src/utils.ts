@@ -25,10 +25,10 @@ export function updateChatStructure(
     const firstItem = structure[0];
     if (!Array.isArray(firstItem)) {
       // Flat list like [0, 1, 2] → [[0, 1, 2], [newId]]
-      return [structure, [normalizedNewId]];
+      return [[structure, [normalizedNewId]]];
     } else {
       // Nested list like [[0], [1]] → [[0], [1], [newId]]
-      return [...structure, [normalizedNewId]];
+      return [[...structure[0], [normalizedNewId]]];
     }
   }
 

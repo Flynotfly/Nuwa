@@ -248,7 +248,6 @@ const ChatBot = () => {
         console.error("Received empty messages array from API");
         return;
       }
-      console.log('New messages: ', newMessages);
       setAllMessages((prev) => [...prev, ...newMessages]);
       setCurrentMessages((prev) =>
         [...prev.filter((msg) => msg.id !== -1), ...newMessages]
