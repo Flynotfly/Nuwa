@@ -12,7 +12,7 @@ from chat.models import Chat, Message
 from chat.serializers.message import MessageSerializer
 from chat.utils import generate_image, update_chat_structure
 from chat.views.chat_bot.text_answer import generate_text_answer
-
+from chat.views.chat_bot.image_answer import generate_image_answer
 
 ALLOWED_ANSWER_TYPES = {
     "detect",
@@ -57,7 +57,7 @@ class ChatBotView(APIView):
             )
         if is_user_message and not user_input:
             return Response(
-                {"error": "As 'is_user_message' is true, 'user_message' should be provided."},
+                {"error": "As 'is_user_message' is true, 'message' should be provided."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         chat_id = int(chat_id)
@@ -86,15 +86,22 @@ class ChatBotView(APIView):
         match answer_type:
             case "text":
                 return generate_text_answer(
-                    chat,
-                    previous_message if previous_message_id else None,
-                    is_user_message,
-                    user_input,
-                    self.request.user,
-                    received_at
+                    chat=chat,
+                    previous_message=previous_message if previous_message_id else None,
+                    is_user_message=is_user_message,
+                    user_input=user_input,
+                    user=self.request.user,
+                    received_at=received_at
                 )
             case "image":
-                ...
+                return generate_image_answer(
+                    chat=chat,
+                    previous_message=previous_message if previous_message_id else None,
+                    is_user_message=is_user_message,
+                    user_input=user_input,
+                    user=self.request.user,
+                    received_at=received_at
+                )
             case "video":
                 ...
 
