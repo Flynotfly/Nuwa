@@ -38,7 +38,7 @@ def generate_text_answer(
     if user_input:
         messages.append({"role": "user", "content": user_input})
     try:
-        ai_response, meta_info = generate_with_ollama_cloud(messages)
+        ai_response, meta_info = generate_with_ollama_cloud(messages=messages)
     except requests.exceptions.RequestException as e:
         return Response(
             {"error": "Failed to reach AI service", "detail": str(e)},
@@ -134,12 +134,16 @@ ollama_cloud_client = OllamaClient(
 )
 
 
-def generate_with_ollama_cloud(messages: list):
+def generate_with_ollama_cloud(
+        messages: list,
+        model: str | None = None,
+        think: str | None = None,
+):
     payload = {
-        "model": "qwen3-next:80b",
+        "model": model if model is not None else "qwen3-next:80b",
         "messages": messages,
         "stream": False,
-        "think": "low"
+        "think": think if think is not None else "low"
     }
     response = ollama_cloud_client.chat(**payload)
     content = response.message.content
@@ -147,8 +151,8 @@ def generate_with_ollama_cloud(messages: list):
         content,
         {
             "provider": "Ollama cloud",
-            "model": "qwen3-next:80b",
-            "think": "low",
+            "model": payload["model"],
+            "think": payload["think"],
         },
     )
 
@@ -159,9 +163,12 @@ openrouter_client = OpenAI(
 )
 
 
-def generate_with_openrouter(messages: list):
+def generate_with_openrouter(
+        messages: list,
+        model: str | None = None,
+):
     payload = {
-        "model": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+        "model": model if model is not None else "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
         "messages": messages,
     }
     response = openrouter_client.chat.completions.create(**payload)
@@ -170,6 +177,6 @@ def generate_with_openrouter(messages: list):
         content,
         {
             "provider": "Openrouter",
-            "model": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+            "model": payload["model"],
         }
     )
