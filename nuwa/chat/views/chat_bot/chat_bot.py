@@ -1,14 +1,8 @@
 import base64
-import json
-import os
-import random
-import time
 
 import requests
-from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import timezone
-from ollama import Client
 from openai import OpenAI
 from rest_framework import status
 from rest_framework.response import Response
@@ -19,17 +13,6 @@ from chat.serializers.message import MessageSerializer
 from chat.utils import generate_image, update_chat_structure
 from chat.views.chat_bot.text_answer import generate_text_answer
 
-client = Client(
-    host="https://ollama.com",
-    headers={"Authorization": "Bearer " + settings.OLLAMA_API_KEY},
-)
-
-# client = OpenAI(
-#     base_url="https://openrouter.ai/api/v1",
-#     api_key=settings.OPENROUTER_KEY,
-# )
-model = "qwen3-next:80b"
-# model = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
 
 ALLOWED_ANSWER_TYPES = {
     "detect",

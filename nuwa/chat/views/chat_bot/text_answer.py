@@ -3,6 +3,7 @@ import requests
 from django.conf import settings
 from django.utils import timezone
 from ollama import Client as OllamaClient
+from openai import OpenAI
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -141,11 +142,34 @@ def generate_with_ollama_cloud(messages: list):
         "think": "low"
     }
     response = ollama_cloud_client.chat(**payload)
+    content = response.message.content
     return (
-        response.message.content,
+        content,
         {
-            "provider": "ollame_cloud",
+            "provider": "Ollama cloud",
             "model": "qwen3-next:80b",
             "think": "low",
         },
+    )
+
+
+openrouter_client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=settings.OPENROUTER_KEY,
+)
+
+
+def generate_with_openrouter(messages: list):
+    payload = {
+        "model": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+        "messages": messages,
+    }
+    response = openrouter_client.chat.completions.create(**payload)
+    content = response.choices[0].message.content
+    return (
+        content,
+        {
+            "provider": "Openrouter",
+            "model": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+        }
     )
