@@ -5,7 +5,7 @@ from django.urls import path
 from chat.views.character import (CharacterListCreateView,
                                   CharacterRetrieveUpdateDestroyView)
 from chat.views.chat import ChatListCreateView, ChatRetrieveDestroyView
-from chat.views.chatting import ChatBotView, GenerateImageView
+from chat.views.chat_bot.chat_bot import ChatBotView, GenerateImageView
 from chat.views.message import MessageListView
 
 app_name = "chat"

@@ -47,25 +47,55 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         response = self.client.post(
             get_chat_url(),
             {
-                "message": "Why you are so ugly today?",
+                "message": "I played tennis today!",
+                "is_user_message": "True",
                 "chat_id": self.chat.pk,
+                "answer_type": "text"
             },
         )
+        print(response.data)
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(len(response.data["ai_message"]["message"]) > 0)
-        self.assertTrue(response.data["ai_message"]["id"])
-        # response = self.client.post(
-        #     get_chat_url(),
-        #     {
-        #         "message": "What i saod to you firstly?",
-        #         "chat_id": self.chat.pk,
-        #         "previous_message_id": response.data["message_id"],
-        #     },
-        # )
-        # self.assertEqual(response.status_code, 200)
-        #
-        # self.assertTrue(len(response.data["response"]) > 0)
-        # self.assertTrue(response.data["message_id"])
+        self.assertTrue(len(response.data["messages"][1]["message"]) > 0)
+        self.assertTrue(response.data["messages"][1]["id"])
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "message": "What i did today?",
+                "is_user_message": "True",
+                "chat_id": self.chat.pk,
+                "previous_message_id": response.data["messages"][1]["id"],
+                "answer_type": "text",
+            },
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(response.data["messages"][1]["message"]) > 0)
+        self.assertTrue(response.data["messages"][1]["id"])
+
+    def test_gen_text_without_user_message(self):
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "chat_id": self.chat.pk,
+                "answer_type": "text",
+            }
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(response.data["messages"][0]["message"]) > 0)
+        self.assertTrue(response.data["messages"][0]["id"])
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "chat_id": self.chat.pk,
+                "answer_type": "text",
+                "previous_message_id": response.data["messages"][0]["id"],
+            }
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(len(response.data["messages"][0]["message"]) > 0)
+        self.assertTrue(response.data["messages"][0]["id"])
 
     def test_gen_image(self):
         response = self.client.post(get_generate_image_url(), {"chat_id": self.chat.pk})

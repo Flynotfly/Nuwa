@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from chat.models import Chat, Message
 from chat.serializers.message import MessageSerializer
 from chat.utils import generate_image, update_chat_structure
+from chat.views.chat_bot.text_answer import generate_text_answer
 
 client = Client(
     host="https://ollama.com",
@@ -30,37 +31,61 @@ client = Client(
 model = "qwen3-next:80b"
 # model = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
 
+ALLOWED_ANSWER_TYPES = {
+    "detect",
+    "text",
+    "image",
+    "video"
+}
+
 
 class ChatBotView(APIView):
     def post(self, request):
-        user_message = request.data.get("message")
+        received_at = timezone.now()
+
+        user_input = request.data.get("message", None)
         chat_id = request.data.get("chat_id")
         previous_message_id = request.data.get("previous_message_id", None)
+        is_user_message = request.data.get("is_user_message", False)
+        answer_type = request.data.get("answer_type", "detect")
 
-        print(f"User message: {user_message}")
-        if not user_message:
-            return Response(
-                {"error": "Message is required"}, status=status.HTTP_400_BAD_REQUEST
-            )
+        if user_input is not None:
+            user_input = user_input.strip()
         if not chat_id:
             return Response(
                 {"error": "chat_id is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        user_message = user_message.strip()
-
+        if answer_type not in ALLOWED_ANSWER_TYPES:
+            return Response(
+                {"error": f"Wrong 'answer_type'. Allowed answer types: {ALLOWED_ANSWER_TYPES}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if is_user_message == "false":
+            is_user_message = False
+        elif is_user_message == "true":
+            is_user_message = True
+        elif is_user_message == "True" or is_user_message == "False":
+            is_user_message = bool(is_user_message)
+        if is_user_message is not False and is_user_message is not True:
+            return Response(
+                {"error": "Wrong 'is_user_message'. Allowed only boolean type."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if is_user_message and not user_input:
+            return Response(
+                {"error": "As 'is_user_message' is true, 'user_message' should be provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        chat_id = int(chat_id)
         chat = Chat.objects.filter(pk=chat_id, owner=self.request.user).first()
         if not chat:
             return Response(
                 {"error": "Chat id is invalid"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        system_prompt = chat.system_prompt
-        messages = [{"role": "system", "content": system_prompt}]
-
         if previous_message_id:
+            previous_message_id = int(previous_message_id)
             previous_message = Message.objects.filter(
                 pk=previous_message_id,
                 owner=self.request.user,
@@ -71,97 +96,24 @@ class ChatBotView(APIView):
                     {"error": "Previous_message_id is invalid"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            message_history_ids = previous_message.history
-            all_message_ids = list(message_history_ids) + [previous_message.pk]
-            history = Message.objects.filter(
-                owner=self.request.user,
-                pk__in=all_message_ids,
-                chat=chat,
-            ).order_by("-conducted")[:30]
-            history = reversed(list(history))
-            for message in history:
-                if message.media_type != "text":
-                    continue
-                messages.append({"role": message.role, "content": message.message})
 
-        messages.append({"role": "user", "content": user_message})
-        think = "low"
-        payload = {
-            "model": model,
-            "messages": messages,
-            "stream": False,
-            "think": think,
-        }
-        try:
-            response = client.chat(**payload)
-            # response = client.chat.completions.create(model=model, messages=messages)
-            ai_response = response.message.content
-            # ai_response = response.choices[0].message.content
-            # ai_response = "Hello user!"
-        except requests.exceptions.RequestException as e:
-            return Response(
-                {"error": "Failed to reach AI service", "detail": str(e)},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
-        except Exception as e:
-            return Response(
-                {"error": "AI generation failed", "detail": str(e)},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+        if answer_type == "detect":
+            ...
 
-        ai_response = ai_response.strip()
-        print(f"Answer: {ai_response}")
-        message_history = [] if not previous_message_id else all_message_ids
-        user_message = Message.objects.create(
-            owner=self.request.user,
-            chat=chat,
-            role="user",
-            media_type="text",
-            message=user_message,
-            conducted=timezone.now(),
-            history=message_history,
-        )
-        structure = update_chat_structure(
-            chat.structure,
-            previous_message_id if previous_message_id else None,
-            user_message.pk,
-            user_message.history[:-1] if len(user_message.history) > 0 else [],
-        )
-        ai_history = message_history + [user_message.pk]
-        ai_message = Message.objects.create(
-            owner=self.request.user,
-            chat=chat,
-            role="assistant",
-            media_type="text",
-            message=ai_response,
-            conducted=timezone.now(),
-            history=ai_history,
-            info={
-                "model": model,
-                "think": think,
-            },
-        )
-        chat.last_message = ai_message
-        chat.last_message_text = ai_message.message
-        chat.last_message_datetime = ai_message.conducted
-        chat.structure = update_chat_structure(
-            structure,
-            user_message.pk,
-            ai_message.pk,
-            user_message.history,
-        )
-        chat.save()
-        user_serializer = MessageSerializer(user_message)
-        ai_serializer = MessageSerializer(ai_message)
-        return Response(
-            {
-                "messages": [
-                    user_serializer.data,
-                    ai_serializer.data,
-                ],
-            },
-            status=status.HTTP_200_OK,
-        )
+        match answer_type:
+            case "text":
+                return generate_text_answer(
+                    chat,
+                    previous_message if previous_message_id else None,
+                    is_user_message,
+                    user_input,
+                    self.request.user,
+                    received_at
+                )
+            case "image":
+                ...
+            case "video":
+                ...
 
 
 class GenerateImageView(APIView):
