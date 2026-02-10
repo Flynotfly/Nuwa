@@ -84,6 +84,12 @@ def generate_text_answer(
             ai_message.pk,
             user_message.history,
         )
+        user_serializer = MessageSerializer(user_message)
+        ai_serializer = MessageSerializer(ai_message)
+        returned_messages = [
+            user_serializer.data,
+            ai_serializer.data,
+        ]
 
     else:
         ai_message = Message.objects.create(
@@ -102,23 +108,15 @@ def generate_text_answer(
             ai_message.pk,
             ai_message.history[:-1] if len(ai_message.history) > 0 else [],
         )
+        ai_serializer = MessageSerializer(ai_message)
+        returned_messages = [
+            ai_serializer.data
+        ]
 
     chat.last_message = ai_message
     chat.last_message_text = ai_message.message
     chat.last_message_datetime = ai_message.conducted
     chat.save()
-    ai_serializer = MessageSerializer(ai_message)
-
-    if is_user_message:
-        user_serializer = MessageSerializer(user_message)
-        returned_messages = [
-            user_serializer.data,
-            ai_serializer.data,
-        ]
-    else:
-        returned_messages = [
-            ai_serializer.data
-        ]
 
     return Response(
         {
