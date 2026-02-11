@@ -5,7 +5,7 @@ from django.urls import path
 from chat.views.character import (CharacterListCreateView,
                                   CharacterRetrieveUpdateDestroyView)
 from chat.views.chat import ChatListCreateView, ChatRetrieveDestroyView
-from chat.views.chat_bot.chat_bot import ChatBotView, GenerateImageView
+from chat.views.chat_bot.chat_bot import ChatBotView
 from chat.views.message import MessageListView
 
 app_name = "chat"
@@ -13,7 +13,6 @@ app_name = "chat"
 
 urlpatterns = [
     path("chat", ChatBotView.as_view(), name="chat"),
-    path("image", GenerateImageView.as_view(), name="image"),
     path(
         "characters", CharacterListCreateView.as_view(), name="characters-list-create"
     ),

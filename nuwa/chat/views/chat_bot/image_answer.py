@@ -1,35 +1,36 @@
-import requests
 import base64
+import json
 import os
 import random
 import time
-import json
 
+import requests
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 
-from chat.serializers.message import MessageSerializer
 from chat.models import Chat, Message
-from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
+from chat.serializers.message import MessageSerializer
 from chat.utils import update_chat_structure
+from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
+
 
 def generate_image_answer(
-        chat: Chat,
-        previous_message: Message | None,
-        is_user_message: bool,
-        user_input: str | None,
-        user,
-        received_at,
+    chat: Chat,
+    previous_message: Message | None,
+    is_user_message: bool,
+    user_input: str | None,
+    user,
+    received_at,
 ):
     try:
         positive_prompt, posotive_promt_meta = get_positive_prompt(
             chat=chat,
             previous_message=previous_message,
             user_input=user_input,
-            user=user
+            user=user,
         )
     except requests.exceptions.RequestException as e:
         return Response(
@@ -153,7 +154,7 @@ def generate_image_answer(
             {
                 "messages": returned_messages,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
     except Exception as e:
         return Response(
@@ -181,13 +182,19 @@ SYSTEM_PROMPT_CONTINUE = "Character definition: " "" ""
 
 
 def get_positive_prompt(
-        chat: Chat,
-        previous_message: Message | None,
-        user_input: str | None,
-        user,
+    chat: Chat,
+    previous_message: Message | None,
+    user_input: str | None,
+    user,
 ):
     if user_input:
-        system_prompt = SYSTEM_PROMT_START + SYSTEM_PROMPT_USER_SPECIFIC + user_input + SYSTEM_PROMPT_CONTINUE + chat.system_prompt
+        system_prompt = (
+            SYSTEM_PROMT_START
+            + SYSTEM_PROMPT_USER_SPECIFIC
+            + user_input
+            + SYSTEM_PROMPT_CONTINUE
+            + chat.system_prompt
+        )
     else:
         system_prompt = SYSTEM_PROMT_START + SYSTEM_PROMPT_CONTINUE + chat.system_prompt
     messages = [{"role": "system", "content": system_prompt}]

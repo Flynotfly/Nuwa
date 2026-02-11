@@ -1,5 +1,4 @@
 import requests
-
 from django.conf import settings
 from django.utils import timezone
 from ollama import Client as OllamaClient
@@ -13,12 +12,12 @@ from chat.utils import update_chat_structure
 
 
 def generate_text_answer(
-        chat: Chat,
-        previous_message: Message | None,
-        is_user_message: bool,
-        user_input: str | None,
-        user,
-        received_at,
+    chat: Chat,
+    previous_message: Message | None,
+    is_user_message: bool,
+    user_input: str | None,
+    user,
+    received_at,
 ):
     system_prompt = chat.system_prompt
     messages = [{"role": "system", "content": system_prompt}]
@@ -26,9 +25,7 @@ def generate_text_answer(
         message_history_ids = previous_message.history
         all_message_ids = list(message_history_ids) + [previous_message.pk]
         history = Message.objects.filter(
-            owner=user,
-            pk__in=all_message_ids,
-            chat=chat
+            owner=user, pk__in=all_message_ids, chat=chat
         ).order_by("-conducted")[:30]
         history = reversed(list(history))
         for message in history:
@@ -109,9 +106,7 @@ def generate_text_answer(
             ai_message.history[:-1] if len(ai_message.history) > 0 else [],
         )
         ai_serializer = MessageSerializer(ai_message)
-        returned_messages = [
-            ai_serializer.data
-        ]
+        returned_messages = [ai_serializer.data]
 
     chat.last_message = ai_message
     chat.last_message_text = ai_message.message
@@ -119,9 +114,7 @@ def generate_text_answer(
     chat.save()
 
     return Response(
-        {
-            "messages": returned_messages
-        },
+        {"messages": returned_messages},
         status=status.HTTP_200_OK,
     )
 
@@ -133,15 +126,15 @@ ollama_cloud_client = OllamaClient(
 
 
 def generate_with_ollama_cloud(
-        messages: list,
-        model: str | None = None,
-        think: str | None = None,
+    messages: list,
+    model: str | None = None,
+    think: str | None = None,
 ):
     payload = {
         "model": model if model is not None else "qwen3-next:80b",
         "messages": messages,
         "stream": False,
-        "think": think if think is not None else "low"
+        "think": think if think is not None else "low",
     }
     response = ollama_cloud_client.chat(**payload)
     content = response.message.content
@@ -162,11 +155,15 @@ openrouter_client = OpenAI(
 
 
 def generate_with_openrouter(
-        messages: list,
-        model: str | None = None,
+    messages: list,
+    model: str | None = None,
 ):
     payload = {
-        "model": model if model is not None else "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+        "model": (
+            model
+            if model is not None
+            else "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
+        ),
         "messages": messages,
     }
     response = openrouter_client.chat.completions.create(**payload)
@@ -176,5 +173,5 @@ def generate_with_openrouter(
         {
             "provider": "Openrouter",
             "model": payload["model"],
-        }
+        },
     )
