@@ -123,7 +123,7 @@ def save_messages(
         )
 
         filename = message_data.filename
-        media_content = message_content.message_content
+        media_content = message_data.media_content
         if filename is not None and media_content is not None:
             message.media.save(filename, media_content, save=True)
         result.append(message)

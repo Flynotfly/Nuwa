@@ -27,7 +27,7 @@ def generate_text_answer(
     system_prompt = chat.system_prompt
     messages = [{"role": "system", "content": system_prompt}]
     if previous_message:
-        append_text_messages_from_history(
+        first_message_history = append_text_messages_from_history(
             messages=messages,
             previous_message=previous_message,
             chat=chat,
@@ -48,7 +48,10 @@ def generate_text_answer(
             status=status.HTTP_502_BAD_GATEWAY,
         )
     ai_response = ai_response.strip()
-    message_history = [] if not previous_message else all_message_ids
+    message_history = []
+    if previous_message:
+        prev_message_history = previous_message.history
+        message_history = list(prev_message_history) + [previous_message.pk]
     ai_message_data = MessageData(
         role="assistant",
         media_type="text",
