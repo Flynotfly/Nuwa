@@ -216,14 +216,14 @@ export function sendChatMessage(
   chat_id: number,
   message: string,
   answer_type: AnswerType,
-  is_user_input: boolean,
+  is_user_message: boolean,
   previous_message_id?: number | null,
 ): Promise<ChatTextResponse> {
   const payload: Record<string, unknown> = {
     message,
     chat_id,
     answer_type,
-    is_user_input,
+    is_user_message,
   };
   if (previous_message_id !== undefined && previous_message_id !== null) {
     payload.previous_message_id = previous_message_id;
