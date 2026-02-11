@@ -28,13 +28,14 @@ services:
             - POSTGRES_DB=postgres
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=postgres
+            - CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
         depends_on:
             - db
             - rabbitmq
     celery_worker:
         image: nuwa:latest
         command: ["uv", "run", "--no-sync", "celery", "-A", "nuwa", "worker", "-l", "info"]
-        restart: always
+        restart: no
         env_file:
             - .env
         environment:
@@ -50,7 +51,7 @@ services:
     celery_beat:
         image: nuwa:latest
         command: ["uv", "run", "--no-sync", "celery", "-A", "nuwa", "beat", "-l", "info"]
-        restart: always
+        restart: no
         env_file:
             - .env
         environment:

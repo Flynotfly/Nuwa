@@ -10,3 +10,9 @@ services:
             - POSTGRES_PASSWORD=postgres
         ports:
             - "5441:5432"
+    rabbitmq:
+        image: rabbitmq:4.2.3-management
+        restart: no
+        ports:
+            - "5672:5672"
+            - "15672:15672"
