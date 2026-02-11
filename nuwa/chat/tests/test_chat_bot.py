@@ -107,9 +107,37 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         )
         print(response.data)
         self.assertEqual(response.status_code, 200)
-        print(response.data)
         self.assertEqual(response.data["messages"][0]["media_type"], "image")
         self.assertTrue(response.data["messages"][0]["media"])
+
+    def test_gen_with_user_message(self):
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "chat_id": self.chat.pk,
+                "answer_type": "image",
+                "is_user_message": "true",
+                "message": "Generate image with blue skirt and white blouse.",
+            },
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["messages"][1]["media_type"], "image")
+        self.assertTrue(response.data["messages"][1]["media"])
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "chat_id": self.chat.pk,
+                "answer_type": "image",
+                "previous_message_id": response.data["messages"][0]["id"],
+                "is_user_message": "true",
+                "message": "Add night and stars.",
+            },
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["messages"][1]["media_type"], "image")
+        self.assertTrue(response.data["messages"][1]["media"])
 
 
 def get_chat_url():
