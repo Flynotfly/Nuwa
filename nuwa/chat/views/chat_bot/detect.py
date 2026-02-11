@@ -1,5 +1,7 @@
-from chat.views.chat_bot.chat_bot import ALLOWED_ANSWER_TYPES
 from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
+
+
+ALLOWED_ANSWER_TYPES = {"detect", "text", "image", "video"}
 
 
 def detect_answer_type(user_input):

@@ -7,8 +7,7 @@ from chat.models import Chat, Message
 from chat.views.chat_bot.detect import detect_answer_type
 from chat.views.chat_bot.image_answer import generate_image_answer
 from chat.views.chat_bot.text_answer import generate_text_answer
-
-ALLOWED_ANSWER_TYPES = {"detect", "text", "image", "video"}
+from chat.views.chat_bot.detect import ALLOWED_ANSWER_TYPES
 
 
 class ChatBotView(APIView):
