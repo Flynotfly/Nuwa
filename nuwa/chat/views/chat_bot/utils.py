@@ -2,8 +2,9 @@ from dataclasses import dataclass
 
 from django.utils import timezone
 
-from chat.models import Chat, Message
+from chat.models import Chat, Message, MEDIA_TYPE_CHOICES_WITH_TEXT
 from chat.utils import update_chat_structure
+from chat.serializers.message import MessageSerializer
 
 
 def get_last_n_messages(
@@ -16,7 +17,7 @@ def get_last_n_messages(
     all_message_ids = list(message_history_ids) + [previous_message.pk]
     history = Message.objects.filter(
         owner=user, pk__in=all_message_ids, chat=chat
-    ).order_by("-conducted")[:30]
+    ).order_by("-conducted")[:n]
     history = reversed(list(history))
     return history
 
@@ -39,51 +40,6 @@ def append_text_messages_from_history(
             continue
         messages.append({"role": message.role, "content": message.message})
     return messages
-
-
-def update_chat_info_with_single_message(
-    chat: Chat,
-    message: Message,
-    message_with_text: bool,
-    previous_message: Message | None,
-):
-    chat.structure = update_chat_structure(
-        chat.structure,
-        previous_message.pk if previous_message else None,
-        message.pk,
-        message.history[:-1] if len(message.history) > 0 else [],
-    )
-    chat.last_message = message
-    chat.last_message_datetime = message.conducted
-    if message_with_text:
-        chat.last_message_text = message.message
-    chat.save()
-
-
-def update_chat_info_with_two_messages(
-    chat: Chat,
-    message_1: Message,
-    message_2: Message,
-    message_with_text: Message | None,
-    previous_message: Message | None,
-):
-    structure = update_chat_structure(
-        chat.structure,
-        previous_message.pk if previous_message else None,
-        message_1.pk,
-        message_1.history[:-1] if len(message_1.history) > 0 else [],
-    )
-    chat.structure = update_chat_structure(
-        structure,
-        message_1.pk,
-        message_2.pk,
-        message_1.history,
-    )
-    chat.last_message = message_2
-    chat.last_message_datetime = message_2.conducted
-    if message_with_text:
-        chat.last_message_text = message_with_text.message
-    chat.save()
 
 
 @dataclass
@@ -109,6 +65,8 @@ def save_messages(
     else:
         history = []
     result = []
+    structure = chat.structure
+    last_message_with_text = None
     for message_data in messages:
         role = message_data.role
         media_type = message_data.media_type
@@ -131,7 +89,22 @@ def save_messages(
         media_content = message_data.media_content
         if filename is not None and media_content is not None:
             message.media.save(filename, media_content, save=True)
-        result.append(message)
-
+        serializer = MessageSerializer(message)
+        result.append(serializer.data)
+        structure = update_chat_structure(
+            structure,
+            previous_message.pk if previous_message else None,
+            message.pk,
+            previous_message.history if previous_message else [],
+        )
+        if message.media_type in MEDIA_TYPE_CHOICES_WITH_TEXT.keys():
+            last_message_with_text = message
+        previous_message = message
         history = list(history) + [message.pk]
+    chat.structure = structure
+    chat.last_message = previous_message
+    chat.last_message_datetime = previous_message.conducted
+    if last_message_with_text:
+        chat.last_message_text = last_message_with_text.message
+    chat.save()
     return result

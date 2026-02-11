@@ -1,19 +1,16 @@
 import requests
 from django.conf import settings
-from django.utils import timezone
 from ollama import Client as OllamaClient
 from openai import OpenAI
 from rest_framework import status
 from rest_framework.response import Response
 
 from chat.models import Chat, Message
-from chat.serializers.message import MessageSerializer
-from chat.utils import update_chat_structure
-from chat.views.chat_bot.utils import (MessageData,
-                                       append_text_messages_from_history,
-                                       save_messages,
-                                       update_chat_info_with_single_message,
-                                       update_chat_info_with_two_messages)
+from chat.views.chat_bot.utils import (
+    MessageData,
+    append_text_messages_from_history,
+    save_messages,
+)
 
 
 def generate_text_answer(
@@ -61,43 +58,18 @@ def generate_text_answer(
             message=user_input,
             conducted=received_at,
         )
-        user_message, ai_message = save_messages(
-            chat=chat,
-            user=user,
-            previous_message=previous_message,
-            messages=[
-                user_message_data,
-                ai_message_data,
-            ],
-        )
-        update_chat_info_with_two_messages(
-            chat=chat,
-            message_1=user_message,
-            message_2=ai_message,
-            message_with_text=ai_message,
-            previous_message=previous_message,
-        )
-        user_serializer = MessageSerializer(user_message)
-        ai_serializer = MessageSerializer(ai_message)
-        returned_messages = [
-            user_serializer.data,
-            ai_serializer.data,
+        messages_to_send = [
+            user_message_data,
+            ai_message_data,
         ]
     else:
-        [ai_message] = save_messages(
-            chat=chat,
-            user=user,
-            previous_message=previous_message,
-            messages=[ai_message_data],
-        )
-        update_chat_info_with_single_message(
-            chat=chat,
-            message=ai_message,
-            message_with_text=True,
-            previous_message=previous_message,
-        )
-        ai_serializer = MessageSerializer(ai_message)
-        returned_messages = [ai_serializer.data]
+        messages_to_send = [ai_message_data]
+    returned_messages = save_messages(
+        chat=chat,
+        user=user,
+        previous_message=previous_message,
+        messages=messages_to_send
+    )
     return Response(
         {"messages": returned_messages},
         status=status.HTTP_200_OK,

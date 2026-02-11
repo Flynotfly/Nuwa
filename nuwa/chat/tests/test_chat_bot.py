@@ -57,6 +57,10 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(response.data["messages"][1]["message"]) > 0)
         self.assertTrue(response.data["messages"][1]["id"])
+        messages_ids = [
+            response.data["messages"][0]["id"],
+            response.data["messages"][1]["id"]
+        ]
         response = self.client.post(
             get_chat_url(),
             {
@@ -71,6 +75,12 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(response.data["messages"][1]["message"]) > 0)
         self.assertTrue(response.data["messages"][1]["id"])
+        messages_ids.append(response.data["messages"][0]["id"])
+        messages_ids.append(response.data["messages"][1]["id"])
+        last_message = Message.objects.get(pk=messages_ids[-1])
+        self.assertEqual(last_message.history, messages_ids[:-1])
+        self.chat.refresh_from_db()
+        self.assertEqual(self.chat.structure, messages_ids)
 
     def test_gen_text_without_user_message(self):
         response = self.client.post(
@@ -84,6 +94,7 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(response.data["messages"][0]["message"]) > 0)
         self.assertTrue(response.data["messages"][0]["id"])
+        messages_ids = [response.data["messages"][0]["id"]]
         response = self.client.post(
             get_chat_url(),
             {
@@ -96,6 +107,11 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(response.data["messages"][0]["message"]) > 0)
         self.assertTrue(response.data["messages"][0]["id"])
+        messages_ids.append(response.data["messages"][0]["id"])
+        last_message = Message.objects.get(pk=messages_ids[-1])
+        self.assertEqual(last_message.history, messages_ids[:-1])
+        self.chat.refresh_from_db()
+        self.assertEqual(self.chat.structure, messages_ids)
 
     def test_gen_image_without_user_message(self):
         response = self.client.post(
@@ -110,7 +126,7 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertEqual(response.data["messages"][0]["media_type"], "image")
         self.assertTrue(response.data["messages"][0]["media"])
 
-    def test_gen_with_user_message(self):
+    def test_gen_image_with_user_message(self):
         response = self.client.post(
             get_chat_url(),
             {
@@ -129,7 +145,7 @@ Always respond as if you’re fully present, emotionally invested, and turned on
             {
                 "chat_id": self.chat.pk,
                 "answer_type": "image",
-                "previous_message_id": response.data["messages"][0]["id"],
+                "previous_message_id": response.data["messages"][1]["id"],
                 "is_user_message": "true",
                 "message": "Add night and stars.",
             },

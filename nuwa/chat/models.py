@@ -89,6 +89,17 @@ def chat_media_upload_path(instance, filename):
     return f"chat_media/user_{instance.owner.id}/chat_{instance.chat.id}/{filename}"
 
 
+ROLE_CHOICES = {"user": "user", "assistant": "assistant"}
+MEDIA_TYPE_CHOICES_WITH_TEXT = {
+    "text": "text",
+}
+MEDIA_TYPE_CHOICES_WITHOUT_TEXT = {
+    "image": "image",
+    "video": "video",
+}
+MEDIA_TYPE_CHOICES = MEDIA_TYPE_CHOICES_WITH_TEXT | MEDIA_TYPE_CHOICES_WITHOUT_TEXT
+
+
 class Message(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -100,16 +111,10 @@ class Message(models.Model):
         related_name="messages",
         on_delete=models.CASCADE,
     )
-    ROLE_CHOICES = {"user": "user", "assistant": "assistant"}
     role = models.CharField(
         max_length=9,
         choices=ROLE_CHOICES,
     )
-    MEDIA_TYPE_CHOICES = {
-        "text": "text",
-        "image": "image",
-        "video": "video",
-    }
     media_type = models.CharField(
         max_length=5,
         choices=MEDIA_TYPE_CHOICES,
