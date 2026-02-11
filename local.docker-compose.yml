@@ -8,6 +8,11 @@ services:
             - POSTGRES_DB=postgres
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=postgres
+    rabbitmq:
+        image: rabbitmq:4.2.3-management
+        restart: no
+        ports:
+            - "15672:15672"
     web:
         image: nuwa:latest
         command: ["uv", "run", "--no-sync", "uwsgi", "--ini", "/code/config/uwsgi/uwsgi.ini"]
