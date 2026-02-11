@@ -59,7 +59,7 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertTrue(response.data["messages"][1]["id"])
         messages_ids = [
             response.data["messages"][0]["id"],
-            response.data["messages"][1]["id"]
+            response.data["messages"][1]["id"],
         ]
         response = self.client.post(
             get_chat_url(),
@@ -154,6 +154,32 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["messages"][1]["media_type"], "image")
         self.assertTrue(response.data["messages"][1]["media"])
+
+    def test_detect_message_with_text_answer(self):
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "chat_id": self.chat.pk,
+                "is_user_message": "true",
+                "message": "Hello my love.",
+            },
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["messages"][1]["media_type"], "text")
+
+    def test_detect_message_with_image_answer(self):
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "chat_id": self.chat.pk,
+                "is_user_message": "true",
+                "message": "Show me you in skirt.",
+            },
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["messages"][1]["media_type"], "image")
 
 
 def get_chat_url():

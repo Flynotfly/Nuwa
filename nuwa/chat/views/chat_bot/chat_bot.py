@@ -1,16 +1,10 @@
-import base64
-
-import requests
-from django.core.files.base import ContentFile
 from django.utils import timezone
-from openai import OpenAI
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chat.models import Chat, Message
-from chat.serializers.message import MessageSerializer
-from chat.utils import update_chat_structure
+from chat.views.chat_bot.detect import detect_answer_type
 from chat.views.chat_bot.image_answer import generate_image_answer
 from chat.views.chat_bot.text_answer import generate_text_answer
 
@@ -80,7 +74,10 @@ class ChatBotView(APIView):
                 )
 
         if answer_type == "detect":
-            ...
+            if user_input:
+                answer_type = detect_answer_type(user_input)
+            else:
+                answer_type = "text"
 
         match answer_type:
             case "text":

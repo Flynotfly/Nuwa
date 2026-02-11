@@ -1,1 +1,35 @@
-def detect_answer_type()
+from chat.models import MEDIA_TYPE_CHOICES
+from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
+
+
+def detect_answer_type(user_input):
+    system_prompt = (
+        "you will be provided with a user request. "
+        "You need to determine what type of response "
+        "should be given to the user. Answer in one word, "
+        "don't write anything else. "
+        "for example if user write 'Send me a pic' or "
+        "'Generate image of something' or similar answer should be image. "
+        "If user write 'generate video' it is video."
+        "If user write 'Hello, how are you' then it is text."
+        "Available types of responses:"
+        "text, image, video."
+        "User prompt: "
+    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_input},
+    ]
+    content, info = generate_with_ollama_cloud(
+        messages=messages,
+    )
+    content = content.strip().lower()
+    print("Detect user input answer type:", repr(content))
+    content = content.split(" ")[0]
+    content = content.split(".")[0]
+    content = content.split(",")[0]
+    content = content.split("\n")[0]
+    if content not in MEDIA_TYPE_CHOICES.keys():
+        content = "text"
+    print("Detect user input answer type:", repr(content))
+    return content
