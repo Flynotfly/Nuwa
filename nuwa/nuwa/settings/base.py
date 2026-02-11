@@ -127,8 +127,6 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static"
 
-OLLAMA_API_KEY = config("OLLAMA_API_KEY")
-
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -151,4 +149,10 @@ SIMPLE_JWT = {
 MEDIA_URL = "media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
+
+OLLAMA_API_KEY = config("OLLAMA_API_KEY")
 OPENROUTER_KEY = config("OPENROUTER_KEY")
+
+CELERY_BROKER_URL = config("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
