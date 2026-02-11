@@ -50,7 +50,7 @@ Always respond as if you’re fully present, emotionally invested, and turned on
                 "message": "I played tennis today!",
                 "is_user_message": "True",
                 "chat_id": self.chat.pk,
-                "answer_type": "text"
+                "answer_type": "text",
             },
         )
         print(response.data)
@@ -78,7 +78,7 @@ Always respond as if you’re fully present, emotionally invested, and turned on
             {
                 "chat_id": self.chat.pk,
                 "answer_type": "text",
-            }
+            },
         )
         print(response.data)
         self.assertEqual(response.status_code, 200)
@@ -90,24 +90,27 @@ Always respond as if you’re fully present, emotionally invested, and turned on
                 "chat_id": self.chat.pk,
                 "answer_type": "text",
                 "previous_message_id": response.data["messages"][0]["id"],
-            }
+            },
         )
         print(response.data)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(len(response.data["messages"][0]["message"]) > 0)
         self.assertTrue(response.data["messages"][0]["id"])
 
-    def test_gen_image(self):
-        response = self.client.post(get_generate_image_url(), {"chat_id": self.chat.pk})
-        self.assertEqual(response.status_code, 201)
+    def test_gen_image_without_user_message(self):
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "chat_id": self.chat.pk,
+                "answer_type": "image",
+            },
+        )
         print(response.data)
-        self.assertEqual(response.data["media_type"], "image")
-        self.assertTrue(response.data["media"])
+        self.assertEqual(response.status_code, 200)
+        print(response.data)
+        self.assertEqual(response.data["messages"][0]["media_type"], "image")
+        self.assertTrue(response.data["messages"][0]["media"])
 
 
 def get_chat_url():
     return reverse("chat:chat")
-
-
-def get_generate_image_url():
-    return reverse("chat:image")
