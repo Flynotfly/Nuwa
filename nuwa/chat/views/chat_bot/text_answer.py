@@ -6,11 +6,9 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from chat.models import Chat, Message
-from chat.views.chat_bot.utils import (
-    MessageData,
-    append_text_messages_from_history,
-    save_messages,
-)
+from chat.views.chat_bot.utils import (MessageData,
+                                       append_text_messages_from_history,
+                                       save_messages)
 
 
 def generate_text_answer(
@@ -68,7 +66,7 @@ def generate_text_answer(
         chat=chat,
         user=user,
         previous_message=previous_message,
-        messages=messages_to_send
+        messages=messages_to_send,
     )
     return Response(
         {"messages": returned_messages},

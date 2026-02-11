@@ -3,11 +3,8 @@ from rest_framework.response import Response
 
 from chat.models import Chat
 from chat.permissions import IsOwnerOrReadOnly
-from chat.serializers.chat import (
-    ChatCreateSerializer,
-    ChatDetailSerializer,
-    ChatListSerializer,
-)
+from chat.serializers.chat import (ChatCreateSerializer, ChatDetailSerializer,
+                                   ChatListSerializer)
 
 
 class ChatListCreateView(generics.ListCreateAPIView):

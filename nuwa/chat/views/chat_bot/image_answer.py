@@ -12,11 +12,9 @@ from rest_framework.response import Response
 
 from chat.models import Chat, Message
 from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
-from chat.views.chat_bot.utils import (
-    MessageData,
-    append_text_messages_from_history,
-    save_messages,
-)
+from chat.views.chat_bot.utils import (MessageData,
+                                       append_text_messages_from_history,
+                                       save_messages)
 
 
 def generate_image_answer(
@@ -92,17 +90,14 @@ def generate_image_answer(
                 message=user_input,
                 conducted=received_at,
             )
-            messages_to_send = [
-                user_message_data,
-                ai_message_data
-            ]
+            messages_to_send = [user_message_data, ai_message_data]
         else:
             messages_to_send = [ai_message_data]
         returned_messages = save_messages(
             chat=chat,
             user=user,
             previous_message=previous_message,
-            messages=messages_to_send
+            messages=messages_to_send,
         )
         return Response(
             {

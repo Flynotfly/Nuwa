@@ -2,9 +2,9 @@ from dataclasses import dataclass
 
 from django.utils import timezone
 
-from chat.models import Chat, Message, MEDIA_TYPE_CHOICES_WITH_TEXT
-from chat.utils import update_chat_structure
+from chat.models import MEDIA_TYPE_CHOICES_WITH_TEXT, Chat, Message
 from chat.serializers.message import MessageSerializer
+from chat.utils import update_chat_structure
 
 
 def get_last_n_messages(

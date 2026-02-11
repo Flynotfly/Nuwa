@@ -2,10 +2,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path
 
-from chat.views.character import (
-    CharacterListCreateView,
-    CharacterRetrieveUpdateDestroyView,
-)
+from chat.views.character import (CharacterListCreateView,
+                                  CharacterRetrieveUpdateDestroyView)
 from chat.views.chat import ChatListCreateView, ChatRetrieveDestroyView
 from chat.views.chat_bot.chat_bot import ChatBotView
 from chat.views.message import MessageListView
