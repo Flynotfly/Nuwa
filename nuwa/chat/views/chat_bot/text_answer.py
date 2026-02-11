@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from chat.models import Chat, Message
 from chat.serializers.message import MessageSerializer
 from chat.utils import update_chat_structure
+from chat.views.chat_bot.utils import append_text_messages_from_history, update_chat_info_with_single_message, update_chat_info_with_two_messages
 
 
 def generate_text_answer(
@@ -22,16 +23,12 @@ def generate_text_answer(
     system_prompt = chat.system_prompt
     messages = [{"role": "system", "content": system_prompt}]
     if previous_message:
-        message_history_ids = previous_message.history
-        all_message_ids = list(message_history_ids) + [previous_message.pk]
-        history = Message.objects.filter(
-            owner=user, pk__in=all_message_ids, chat=chat
-        ).order_by("-conducted")[:30]
-        history = reversed(list(history))
-        for message in history:
-            if message.media_type != "text":
-                continue
-            messages.append({"role": message.role, "content": message.message})
+        append_text_messages_from_history(
+            messages=messages,
+            previous_message=previous_message,
+            chat=chat,
+            user=user,
+        )
     if user_input:
         messages.append({"role": "user", "content": user_input})
     try:
@@ -58,12 +55,6 @@ def generate_text_answer(
             conducted=received_at,
             history=message_history,
         )
-        structure = update_chat_structure(
-            chat.structure,
-            previous_message.pk if previous_message else None,
-            user_message.pk,
-            user_message.history[:-1] if len(user_message.history) > 0 else [],
-        )
         ai_history = message_history + [user_message.pk]
         ai_message = Message.objects.create(
             owner=user,
@@ -75,11 +66,12 @@ def generate_text_answer(
             history=ai_history,
             info=meta_info,
         )
-        chat.structure = update_chat_structure(
-            structure,
-            user_message.pk,
-            ai_message.pk,
-            user_message.history,
+        update_chat_info_with_two_messages(
+            chat=chat,
+            message_1=user_message,
+            message_2=ai_message,
+            message_with_text=ai_message,
+            previous_message=previous_message,
         )
         user_serializer = MessageSerializer(user_message)
         ai_serializer = MessageSerializer(ai_message)
@@ -87,7 +79,6 @@ def generate_text_answer(
             user_serializer.data,
             ai_serializer.data,
         ]
-
     else:
         ai_message = Message.objects.create(
             owner=user,
@@ -99,20 +90,14 @@ def generate_text_answer(
             history=message_history,
             info=meta_info,
         )
-        chat.structure = update_chat_structure(
-            chat.structure,
-            previous_message.pk if previous_message else None,
-            ai_message.pk,
-            ai_message.history[:-1] if len(ai_message.history) > 0 else [],
+        update_chat_info_with_single_message(
+            chat=chat,
+            message=ai_message,
+            message_with_text=True,
+            previous_message=previous_message,
         )
         ai_serializer = MessageSerializer(ai_message)
         returned_messages = [ai_serializer.data]
-
-    chat.last_message = ai_message
-    chat.last_message_text = ai_message.message
-    chat.last_message_datetime = ai_message.conducted
-    chat.save()
-
     return Response(
         {"messages": returned_messages},
         status=status.HTTP_200_OK,

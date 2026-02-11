@@ -15,6 +15,7 @@ from chat.models import Chat, Message
 from chat.serializers.message import MessageSerializer
 from chat.utils import update_chat_structure
 from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
+from chat.views.chat_bot.utils import append_text_messages_from_history, update_chat_info_with_single_message, update_chat_info_with_two_messages
 
 
 def generate_image_answer(
@@ -87,12 +88,6 @@ def generate_image_answer(
                 conducted=received_at,
                 history=message_history,
             )
-            structure = update_chat_structure(
-                chat.structure,
-                previous_message.pk if previous_message else None,
-                user_message.pk,
-                user_message.history[:-1] if len(user_message.history) > 0 else [],
-            )
             ai_history = message_history + [user_message.pk]
             ai_message = Message.objects.create(
                 owner=user,
@@ -108,16 +103,13 @@ def generate_image_answer(
                 },
             )
             ai_message.media.save(filename, image_content, save=True)
-            chat.structure = update_chat_structure(
-                structure,
-                user_message.pk,
-                ai_message.pk,
-                user_message.history,
+            update_chat_info_with_two_messages(
+                chat=chat,
+                message_1=user_message,
+                message_2=ai_message,
+                message_with_text=user_message,
+                previous_message=previous_message,
             )
-            chat.last_message = ai_message
-            chat.last_message_text = user_message.message
-            chat.last_message_datetime = ai_message.conducted
-            chat.save()
             user_serializer = MessageSerializer(user_message)
             ai_serializer = MessageSerializer(ai_message)
             returned_messages = [
@@ -139,15 +131,12 @@ def generate_image_answer(
                 },
             )
             ai_message.media.save(filename, image_content, save=True)
-            chat.structure = update_chat_structure(
-                chat.structure,
-                previous_message.pk if previous_message else None,
-                ai_message.pk,
-                ai_message.history[:-1] if len(ai_message.history) > 0 else [],
+            update_chat_info_with_single_message(
+                chat=chat,
+                message=ai_message,
+                message_with_text=False,
+                previous_message=previous_message,
             )
-            chat.last_message = ai_message
-            chat.last_message_datetime = ai_message.conducted
-            chat.save()
             ai_serializer = MessageSerializer(ai_message)
             returned_messages = [ai_serializer.data]
         return Response(
@@ -199,18 +188,12 @@ def get_positive_prompt(
         system_prompt = SYSTEM_PROMT_START + SYSTEM_PROMPT_CONTINUE + chat.system_prompt
     messages = [{"role": "system", "content": system_prompt}]
     if previous_message:
-        message_history_ids = previous_message.history
-        all_message_ids = list(message_history_ids) + [previous_message.pk]
-        history = Message.objects.filter(
-            owner=user,
-            pk__in=all_message_ids,
+        append_text_messages_from_history(
+            messages=messages,
+            previous_message=previous_message,
             chat=chat,
-        ).order_by("-conducted")[:30]
-        history = reversed(list(history))
-        for message in history:
-            if message.media_type != "text":
-                continue
-            messages.append({"role": message.role, "content": message.message})
+            user=user,
+        )
     return generate_with_ollama_cloud(
         messages=messages,
         think="medium",

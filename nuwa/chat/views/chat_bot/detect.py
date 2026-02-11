@@ -1,0 +1,1 @@
+def detect_answer_type()
