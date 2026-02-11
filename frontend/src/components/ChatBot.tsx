@@ -22,7 +22,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import dayjs from 'dayjs';
 import { useParams } from 'react-router-dom';
 import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
-import { ChatMessage } from '../types/chatting';
+import {AnswerType, ChatMessage} from '../types/chatting';
 import { ChatDetail } from '../types/chat';
 import { updateChatStructure, removeLastElementIfNotEmpty, findBranches, rebaseBranch } from '../utils';
 
@@ -242,7 +242,14 @@ const ChatBot = () => {
     try {
       const sendPreviousMessageId = _lastMessageId;
       const messageToSend = isEdit ? editMessageText.trim() : inputMessage.trim();
-      const res = await sendChatMessage(chatId, messageToSend, sendPreviousMessageId, is_gen_image);
+      const answerType: AnswerType = is_gen_image ? 'image' : 'text';
+      const res = await sendChatMessage(
+        chatId,
+        messageToSend,
+        answerType,
+        !is_gen_image,
+        sendPreviousMessageId,
+      );
       const newMessages = res.messages;
       if (!Array.isArray(newMessages) || newMessages.length === 0) {
         console.error("Received empty messages array from API");

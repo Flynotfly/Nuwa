@@ -13,3 +13,8 @@ export interface ChatMessage {
 export interface ChatTextResponse {
   messages: ChatMessage[],
 }
+
+export type AnswerType =
+  'text'
+  | 'image'
+  | 'video';

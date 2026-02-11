@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 import {SignInData, TokenResponse, SignUpData, SessionData, ShortUserInfo} from "../auth/types";
 import {CharacterFull, CharacterShort, NewCharacterFull} from "../types/character";
-import {ChatMessage, ChatTextResponse} from "../types/chatting";
+import {AnswerType, ChatMessage, ChatTextResponse} from "../types/chatting";
 import { getTokens, saveTokens, clearTokens } from "./utils";
 import {ChatDetail, ChatListElement} from "../types/chat";
 import dayjs from 'dayjs';
@@ -215,18 +215,20 @@ export function getAllMessages(chat_id: number): Promise<ChatMessage[]> {
 export function sendChatMessage(
   chat_id: number,
   message: string,
+  answer_type: AnswerType,
+  is_user_input: boolean,
   previous_message_id?: number | null,
-  is_gen_image: boolean,
 ): Promise<ChatTextResponse> {
   const payload: Record<string, unknown> = {
     message,
     chat_id,
+    answer_type,
+    is_user_input,
   };
   if (previous_message_id !== undefined && previous_message_id !== null) {
     payload.previous_message_id = previous_message_id;
   }
-  const url = is_gen_image ? URLs.IMAGE : URLs.CHATTING;
-  return api.post(url, payload)
+  return api.post(URLs.CHATTING, payload)
     .then((response) => {
     const data = response.data;
     if (!Array.isArray(data?.messages)) {
