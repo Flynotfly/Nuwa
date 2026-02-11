@@ -64,7 +64,6 @@ services:
         depends_on:
             - db
             - rabbitmq
-        
     nginx:
         image: ${DOCKERHUB_USERNAME}/nuwa-nginx:${TAG}
         restart: always
