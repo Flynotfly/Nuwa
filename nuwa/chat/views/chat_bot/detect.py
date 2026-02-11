@@ -1,4 +1,4 @@
-from chat.models import MEDIA_TYPE_CHOICES
+from chat.views.chat_bot.chat_bot import ALLOWED_ANSWER_TYPES
 from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
 
 
@@ -29,7 +29,7 @@ def detect_answer_type(user_input):
     content = content.split(".")[0]
     content = content.split(",")[0]
     content = content.split("\n")[0]
-    if content not in MEDIA_TYPE_CHOICES.keys():
+    if content not in ALLOWED_ANSWER_TYPES or content == "detect":
         content = "text"
     print("Detect user input answer type:", repr(content))
     return content
