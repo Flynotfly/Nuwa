@@ -9,7 +9,11 @@ from rest_framework.response import Response
 from chat.models import Chat, Message
 from chat.serializers.message import MessageSerializer
 from chat.utils import update_chat_structure
-from chat.views.chat_bot.utils import append_text_messages_from_history, update_chat_info_with_single_message, update_chat_info_with_two_messages
+from chat.views.chat_bot.utils import (MessageData,
+                                       append_text_messages_from_history,
+                                       save_messages,
+                                       update_chat_info_with_single_message,
+                                       update_chat_info_with_two_messages)
 
 
 def generate_text_answer(
@@ -45,26 +49,27 @@ def generate_text_answer(
         )
     ai_response = ai_response.strip()
     message_history = [] if not previous_message else all_message_ids
+    ai_message_data = MessageData(
+        role="assistant",
+        media_type="text",
+        message=ai_response,
+        info=meta_info,
+    )
     if is_user_message:
-        user_message = Message.objects.create(
-            owner=user,
-            chat=chat,
+        user_message_data = MessageData(
             role="user",
             media_type="text",
             message=user_input,
             conducted=received_at,
-            history=message_history,
         )
-        ai_history = message_history + [user_message.pk]
-        ai_message = Message.objects.create(
-            owner=user,
+        user_message, ai_message = save_messages(
             chat=chat,
-            role="assistant",
-            media_type="text",
-            message=ai_response,
-            conducted=timezone.now(),
-            history=ai_history,
-            info=meta_info,
+            user=user,
+            history=message_history,
+            messages=[
+                user_message_data,
+                ai_message_data,
+            ],
         )
         update_chat_info_with_two_messages(
             chat=chat,
@@ -80,15 +85,11 @@ def generate_text_answer(
             ai_serializer.data,
         ]
     else:
-        ai_message = Message.objects.create(
-            owner=user,
+        [ai_message] = save_messages(
             chat=chat,
-            role="assistant",
-            media_type="text",
-            message=ai_response,
-            conducted=timezone.now(),
+            user=user,
             history=message_history,
-            info=meta_info,
+            messages=[ai_message_data],
         )
         update_chat_info_with_single_message(
             chat=chat,

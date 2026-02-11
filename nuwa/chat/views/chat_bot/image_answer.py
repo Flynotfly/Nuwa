@@ -15,7 +15,11 @@ from chat.models import Chat, Message
 from chat.serializers.message import MessageSerializer
 from chat.utils import update_chat_structure
 from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
-from chat.views.chat_bot.utils import append_text_messages_from_history, update_chat_info_with_single_message, update_chat_info_with_two_messages
+from chat.views.chat_bot.utils import (MessageData,
+                                       append_text_messages_from_history,
+                                       save_messages,
+                                       update_chat_info_with_single_message,
+                                       update_chat_info_with_two_messages)
 
 
 def generate_image_answer(
@@ -78,31 +82,32 @@ def generate_image_answer(
         if previous_message:
             prev_message_history = previous_message.history
             message_history = list(prev_message_history) + [previous_message.pk]
+        ai_message_data = MessageData(
+            role="assistant",
+            media_type="image",
+            info={
+                "generation_info": result_meta,
+                "prompt_generation_info": posotive_promt_meta,
+            },
+            filename=filename,
+            media_content=image_content,
+        )
         if is_user_message:
-            user_message = Message.objects.create(
-                owner=user,
-                chat=chat,
+            user_message_data = MessageData(
                 role="user",
                 media_type="text",
                 message=user_input,
                 conducted=received_at,
-                history=message_history,
             )
-            ai_history = message_history + [user_message.pk]
-            ai_message = Message.objects.create(
-                owner=user,
+            user_message, ai_message = save_messages(
                 chat=chat,
-                role="assistant",
-                media_type="image",
-                message="",
-                conducted=timezone.now(),
-                history=ai_history,
-                info={
-                    "generation_info": result_meta,
-                    "prompt_generation_info": posotive_promt_meta,
-                },
+                user=user,
+                history=message_history,
+                messages=[
+                    user_message_data,
+                    ai_message_data,
+                ],
             )
-            ai_message.media.save(filename, image_content, save=True)
             update_chat_info_with_two_messages(
                 chat=chat,
                 message_1=user_message,
@@ -117,6 +122,12 @@ def generate_image_answer(
                 ai_serializer.data,
             ]
         else:
+            [ai_message] = save_messages(
+                chat=chat,
+                user=user,
+                history=message_history,
+                messages=[ai_message_data]
+            )
             ai_message = Message.objects.create(
                 owner=user,
                 chat=chat,
