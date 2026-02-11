@@ -78,10 +78,6 @@ def generate_image_answer(
         image_data = base64.b64decode(result["image_base64"])
         image_content = ContentFile(image_data)
         filename = result.get("filename")
-        message_history = []
-        if previous_message:
-            prev_message_history = previous_message.history
-            message_history = list(prev_message_history) + [previous_message.pk]
         ai_message_data = MessageData(
             role="assistant",
             media_type="image",
@@ -102,7 +98,7 @@ def generate_image_answer(
             user_message, ai_message = save_messages(
                 chat=chat,
                 user=user,
-                history=message_history,
+                previous_message=previous_message,
                 messages=[
                     user_message_data,
                     ai_message_data,
@@ -125,23 +121,9 @@ def generate_image_answer(
             [ai_message] = save_messages(
                 chat=chat,
                 user=user,
-                history=message_history,
+                previous_message=previous_message,
                 messages=[ai_message_data]
             )
-            ai_message = Message.objects.create(
-                owner=user,
-                chat=chat,
-                role="assistant",
-                media_type="image",
-                message="",
-                conducted=timezone.now(),
-                history=message_history,
-                info={
-                    "generation_info": result_meta,
-                    "prompt_generation_info": posotive_promt_meta,
-                },
-            )
-            ai_message.media.save(filename, image_content, save=True)
             update_chat_info_with_single_message(
                 chat=chat,
                 message=ai_message,

@@ -100,9 +100,14 @@ class MessageData:
 def save_messages(
     chat: Chat,
     user,
-    history: list,
+    previous_message: Message | None,
     messages: list,
 ):
+    if previous_message:
+        prev_message_history = previous_message.history
+        history = list(prev_message_history) + [previous_message.pk]
+    else:
+        history = []
     result = []
     for message_data in messages:
         role = message_data.role

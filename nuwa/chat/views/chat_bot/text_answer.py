@@ -48,10 +48,6 @@ def generate_text_answer(
             status=status.HTTP_502_BAD_GATEWAY,
         )
     ai_response = ai_response.strip()
-    message_history = []
-    if previous_message:
-        prev_message_history = previous_message.history
-        message_history = list(prev_message_history) + [previous_message.pk]
     ai_message_data = MessageData(
         role="assistant",
         media_type="text",
@@ -68,7 +64,7 @@ def generate_text_answer(
         user_message, ai_message = save_messages(
             chat=chat,
             user=user,
-            history=message_history,
+            previous_message=previous_message,
             messages=[
                 user_message_data,
                 ai_message_data,
@@ -91,7 +87,7 @@ def generate_text_answer(
         [ai_message] = save_messages(
             chat=chat,
             user=user,
-            history=message_history,
+            previous_message=previous_message,
             messages=[ai_message_data],
         )
         update_chat_info_with_single_message(
