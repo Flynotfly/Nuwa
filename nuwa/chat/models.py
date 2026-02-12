@@ -1,5 +1,6 @@
 import os
 
+from django.core.validators import MaxValueValidator
 from django.conf import settings
 from django.db import models
 
@@ -148,3 +149,80 @@ class Message(models.Model):
             f"<Message of user {self.owner.pk} in chat "
             f"{self.chat.pk} at {self.conducted}"
         )
+
+
+class ScheduledTask(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="scheduled_tasks",
+        on_delete=models.CASCADE,
+    )
+    chat = models.ForeignKey(
+        Chat,
+        related_name="scheduled_tasks",
+        on_delete=models.CASCADE,
+    )
+    center_time = models.TimeField(help_text="In UTC")
+    delta_minutes = models.PositiveIntegerField(validators=[MaxValueValidator(360)])
+    user_timezone = models.IntegerField(help_text="In minutes")
+    prompt = models.TextField(
+        blank=True,
+        null=True,
+    )
+    use_time = models.BooleanField()
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["-created_at"])
+        ]
+        ordering = ["-created_at"]
+
+    def __repr__(self):
+        return f"<ScheduledTask of user {self.owner.pk} at {self.center_time} +- {self.delta_minutes} minutes>"
+
+
+class ScheduledMessage(models.Model):
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="scheduled_messages",
+        on_delete=models.CASCADE,
+    )
+    task = models.ForeignKey(
+        ScheduledTask,
+        related_name="messages",
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
+    chat = models.ForeignKey(
+        Chat,
+        related_name="scheduled_messages",
+        on_delete=models.CASCADE,
+    )
+    scheduled_at = models.DateTimeField()
+    is_sent = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(
+        blank=True,
+        null=True,
+    )
+    message = models.ForeignKey(
+        Message,
+        related_name="scheduled_message",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["-scheduled_at"])
+        ]
+        ordering = ["-scheduled_at"]
+        unique_together = ["task", "scheduled_at"]
