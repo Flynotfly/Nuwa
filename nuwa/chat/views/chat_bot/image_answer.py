@@ -11,10 +11,11 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from chat.models import Chat, Message
-from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
+from chat.views.chat_bot.text_answer import generate_text
 from chat.views.chat_bot.utils import (MessageData,
                                        append_text_messages_from_history,
                                        save_messages)
+from chat.providers import MODELS
 
 
 def generate_image_answer(
@@ -154,9 +155,9 @@ def get_positive_prompt(
             chat=chat,
             user=user,
         )
-    return generate_with_ollama_cloud(
+    return generate_text(
         messages=messages,
-        think="medium",
+        **MODELS["prompt_for_image"],
     )
 
 

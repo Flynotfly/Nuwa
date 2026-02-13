@@ -9,6 +9,7 @@ from chat.models import Chat, Message
 from chat.views.chat_bot.utils import (MessageData,
                                        append_text_messages_from_history,
                                        save_messages)
+from chat.providers import MODELS
 
 
 def generate_text_answer(
@@ -22,7 +23,7 @@ def generate_text_answer(
     system_prompt = chat.system_prompt
     messages = [{"role": "system", "content": system_prompt}]
     if previous_message:
-        first_message_history = append_text_messages_from_history(
+        append_text_messages_from_history(
             messages=messages,
             previous_message=previous_message,
             chat=chat,
@@ -31,7 +32,7 @@ def generate_text_answer(
     if user_input:
         messages.append({"role": "user", "content": user_input})
     try:
-        ai_response, meta_info = generate_with_ollama_cloud(messages=messages)
+        ai_response, meta_info = generate_text(messages=messages, **MODELS["text_answer"])
     except requests.exceptions.RequestException as e:
         return Response(
             {"error": "Failed to reach AI service", "detail": str(e)},
@@ -80,17 +81,39 @@ ollama_cloud_client = OllamaClient(
 )
 
 
+def generate_text(
+        messages: list,
+        provider: str,
+        model: str,
+        think: str | None = None,
+):
+    match provider:
+        case "ollama-cloud":
+            return generate_with_ollama_cloud(
+                messages,
+                model,
+                think,
+            )
+        case "openrouter":
+            return generate_with_openrouter(
+                messages,
+                model,
+                think,
+            )
+
+
 def generate_with_ollama_cloud(
     messages: list,
-    model: str | None = None,
+    model: str,
     think: str | None = None,
 ):
     payload = {
-        "model": model if model is not None else "qwen3-next:80b",
+        "model": model,
         "messages": messages,
         "stream": False,
-        "think": think if think is not None else "low",
     }
+    if think:
+        payload["think"] = think
     response = ollama_cloud_client.chat(**payload)
     content = response.message.content
     return (
@@ -98,7 +121,7 @@ def generate_with_ollama_cloud(
         {
             "provider": "Ollama cloud",
             "model": payload["model"],
-            "think": payload["think"],
+            "think": payload.get("think", None),
         },
     )
 
@@ -111,16 +134,15 @@ openrouter_client = OpenAI(
 
 def generate_with_openrouter(
     messages: list,
-    model: str | None = None,
+    model: str,
+    think: str | None = None,
 ):
     payload = {
-        "model": (
-            model
-            if model is not None
-            else "cognitivecomputations/dolphin-mistral-24b-venice-edition:free"
-        ),
+        "model": model,
         "messages": messages,
     }
+    if think:
+        payload["think"] = think
     response = openrouter_client.chat.completions.create(**payload)
     content = response.choices[0].message.content
     return (
@@ -128,5 +150,6 @@ def generate_with_openrouter(
         {
             "provider": "Openrouter",
             "model": payload["model"],
+            "think": payload.get("think", None)
         },
     )

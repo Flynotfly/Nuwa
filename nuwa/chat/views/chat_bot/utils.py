@@ -39,7 +39,6 @@ def append_text_messages_from_history(
         if message.media_type != "text":
             continue
         messages.append({"role": message.role, "content": message.message})
-    return messages
 
 
 @dataclass

@@ -1,4 +1,5 @@
-from chat.views.chat_bot.text_answer import generate_with_ollama_cloud
+from chat.views.chat_bot.text_answer import generate_text
+from chat.providers import MODELS
 
 
 ALLOWED_ANSWER_TYPES = {"detect", "text", "image", "video"}
@@ -22,8 +23,9 @@ def detect_answer_type(user_input):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_input},
     ]
-    content, info = generate_with_ollama_cloud(
+    content, info = generate_text(
         messages=messages,
+        **MODELS["detect"]
     )
     content = content.strip().lower()
     print("Detect user input answer type:", repr(content))
