@@ -4,3 +4,7 @@
 db.sqlite3
 /media
 /local_docker
+
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
