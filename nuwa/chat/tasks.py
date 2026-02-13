@@ -35,6 +35,8 @@ def generate_message_instance_for_task(task):
         task=task,
         chat=task.chat,
         scheduled_at=scheduled_at,
+        prompt=task.prompt,
+        use_time=task.use_time,
     )
 
 

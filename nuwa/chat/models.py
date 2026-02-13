@@ -216,6 +216,11 @@ class ScheduledMessage(models.Model):
         blank=True,
         null=True,
     )
+    prompt = models.TextField(
+        blank=True,
+        null=True,
+    )
+    use_time = models.BooleanField()
 
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(auto_now=True)

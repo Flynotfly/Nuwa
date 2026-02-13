@@ -66,7 +66,6 @@ class MessageAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "edited_at")
 
 
-
 @admin.register(ScheduledTask)
 class ScheduledTaskAdmin(admin.ModelAdmin):
     list_display = ("id", "owner", "chat", "center_time", "delta_minutes", "is_active", "created_at")
