@@ -6,9 +6,9 @@ from django.utils.timezone import timezone, datetime, now, timedelta
 
 @shared_task
 def generate_schedule_messages():
-    from chat.models import ScheduledMessage
+    from chat.models import ScheduledTask
 
-    for task in ScheduledMessage.objects.filter(is_active=True):
+    for task in ScheduledTask.objects.filter(is_active=True):
         generate_message_instance_for_task(task)
 
 
