@@ -155,15 +155,13 @@ OLLAMA_API_KEY = config("OLLAMA_API_KEY")
 OPENROUTER_KEY = config("OPENROUTER_KEY")
 
 CELERY_BROKER_URL = config("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = "django-db"
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_BEAT_SCHEDULE = {
-    # 'process-due-messages': {
-    #     'task': 'chat.tasks.process_due_messages',
-    #     'schedule': 30.0,
+    # "process-due-messages": {
+    #     "task": "chat.tasks.process_due_messages",
+    #     "schedule": 30.0,
     # },
-    'generate-schedule-messages': {
-        'task': 'chat.tasks.generate_schedule_messages',
-        'schedule': crontab(hour='0,8,16', minute=0),
+    "generate-schedule-messages": {
+        "task": "chat.tasks.generate_schedule_messages",
+        "schedule": crontab(hour="*/8", minute=0),
     },
 }
