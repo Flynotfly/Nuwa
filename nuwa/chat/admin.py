@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Character, Chat, Message
+from .models import Character, Chat, Message, ScheduledMessage, ScheduledTask
 
 
 @admin.register(Character)
@@ -64,3 +64,20 @@ class MessageAdmin(admin.ModelAdmin):
     date_hierarchy = "conducted"
     ordering = ["-conducted"]
     readonly_fields = ("created_at", "edited_at")
+
+
+
+@admin.register(ScheduledTask)
+class ScheduledTaskAdmin(admin.ModelAdmin):
+    list_display = ("id", "owner", "chat", "center_time", "delta_minutes", "is_active", "created_at")
+    list_filter = ("is_active", "use_time", "created_at")
+    search_fields = ("owner__email", "prompt")
+    raw_id_fields = ("owner", "chat")
+
+
+@admin.register(ScheduledMessage)
+class ScheduledMessageAdmin(admin.ModelAdmin):
+    list_display = ("id", "owner", "task", "chat", "scheduled_at", "is_sent", "sent_at")
+    list_filter = ("is_sent", "scheduled_at", "created_at")
+    search_fields = ("owner__email",)
+    raw_id_fields = ("owner", "task", "chat", "message")
