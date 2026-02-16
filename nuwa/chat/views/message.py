@@ -15,7 +15,7 @@ class MessageListView(generics.ListAPIView):
         )
 
 
-class MessageEditView(generics.UpdateAPIView):
+class MessageUpdateView(generics.UpdateAPIView):
     serializer_class = MessageUpdateSerializer
     http_method_names = ["patch"]
 
