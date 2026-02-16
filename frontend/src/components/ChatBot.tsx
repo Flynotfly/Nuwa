@@ -21,7 +21,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import DownloadIcon from '@mui/icons-material/Download';
 import dayjs from 'dayjs';
 import { useParams } from 'react-router-dom';
-import { getChatDetail, getAllMessages, sendChatMessage, sendChatMessageStream } from '../api/api';
+import { getChatDetail, getAllMessages, sendChatMessage, sendChatMessageStrea, updateMessage } from '../api/api';
 import {AnswerType, ChatMessage} from '../types/chatting';
 import { ChatDetail } from '../types/chat';
 import { updateChatStructure, removeLastElementIfNotEmpty, findBranches, rebaseBranch } from '../utils';
@@ -330,6 +330,38 @@ const ChatBot = () => {
     setChosenBranches((prev) => [...prev, ...Array(newMessages.length).fill(0)]);
   }
 
+  const handleSaveAssistantEdit = async (msg: ChatMessage) => {
+    if (!editMessageText.trim()) return;
+
+    const originalMessage = msg.message;
+    setEditingMessageId(null);
+    setEditMessageText('');
+
+    // Optimistically update the message in UI
+    const updatedMsg = { ...msg, message: editMessageText.trim() };
+    setCurrentMessages((prev) =>
+      prev.map((m) => (m.id === msg.id ? updatedMsg : m))
+    );
+    setAllMessages((prev) =>
+      prev.map((m) => (m.id === msg.id ? updatedMsg : m))
+    );
+
+    try {
+      await updateMessage(msg.id, editMessageText.trim());
+    } catch (err) {
+      console.error('Failed to update assistant message:', err);
+      // Revert on failure
+      setCurrentMessages((prev) =>
+        prev.map((m) => (m.id === msg.id ? { ...m, message: originalMessage } : m))
+      );
+      setAllMessages((prev) =>
+        prev.map((m) => (m.id === msg.id ? { ...m, message: originalMessage } : m))
+      );
+      setError('Failed to update message.');
+    }
+  };
+
+
   const handleCloseSnackbar = () => {
     setError('');
   };
@@ -480,8 +512,8 @@ const ChatBot = () => {
                     position: 'relative',
                   }}
                 >
-                  {isEditing && msg.role === 'user' ? (
-                    // Edit mode for user messages
+                  {isEditing ? (
+                    // Edit mode for both user and assistant messages
                     <Box
                       sx={{
                         display: 'flex',
@@ -493,7 +525,7 @@ const ChatBot = () => {
                       <TextField
                         fullWidth
                         multiline
-                        maxRows={4}
+                        maxRows={8}
                         value={editMessageText}
                         onChange={(e) => setEditMessageText(e.target.value)}
                         variant="outlined"
@@ -505,7 +537,7 @@ const ChatBot = () => {
                           },
                         }}
                       />
-                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                         <Button
                           size="small"
                           onClick={handleCancelEdit}
@@ -517,10 +549,14 @@ const ChatBot = () => {
                         <Button
                           size="small"
                           variant="contained"
-                          onClick={() => handleSaveEdit(msg)}
+                          onClick={() =>
+                            msg.role === 'assistant'
+                              ? handleSaveAssistantEdit(msg)
+                              : handleSaveEdit(msg)
+                          }
                           disabled={loading || !editMessageText.trim()}
                           sx={{ borderRadius: 1 }}
-                          endIcon={<SendIcon />}
+                          endIcon={msg.role === 'user' ? <SendIcon /> : undefined}
                         >
                           Save
                         </Button>
@@ -604,7 +640,7 @@ const ChatBot = () => {
                         )}
                       </Box>
 
-                      {/* Edit button - only for text user messages */}
+                      {/* Edit button - for user text messages (original behavior) */}
                       {msg.role === 'user' &&
                         msg.id !== -1 &&
                         !isImageMessage && (
@@ -614,6 +650,31 @@ const ChatBot = () => {
                             sx={{
                               mt: 0.5,
                               alignSelf: 'flex-end',
+                              color: theme.palette.text.secondary,
+                              opacity: 0.7,
+                              '&:hover': {
+                                opacity: 1,
+                                backgroundColor: 'transparent',
+                                color: theme.palette.primary.main,
+                              },
+                              padding: '4px',
+                            }}
+                            aria-label={`Edit message ${msg.id}`}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        )}
+
+                      {/* Edit button - for assistant text messages (update in place) */}
+                      {msg.role === 'assistant' &&
+                        msg.id > 0 &&
+                        !isImageMessage && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditMessage(msg)}
+                            sx={{
+                              mt: 0.5,
+                              alignSelf: 'flex-start',
                               color: theme.palette.text.secondary,
                               opacity: 0.7,
                               '&:hover': {
@@ -677,11 +738,11 @@ const ChatBot = () => {
                         </Box>
                       )}
                     </>
-                    )}
+                  )}
                 </Box>
               );
-          })
-            )}
+            })
+          )}
 
           {loading && (
             <Box sx={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
@@ -795,5 +856,6 @@ const ChatBot = () => {
     </Box>
   );
 };
+
 
 export default ChatBot;

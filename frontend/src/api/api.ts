@@ -26,6 +26,7 @@ const URLs = Object.freeze({
   CHAT: '/chats',
   CHATTING: '/chat',
   IMAGE: '/image',
+  MESSAGES: '/messages',
 })
 
 let isRefreshing = false;
@@ -321,4 +322,12 @@ export function sendChatMessageStream(
     });
 
   return { abort: () => controller.abort() };
+}
+
+export function updateMessage(
+  id: number,
+  message: string,
+) {
+  return api.patch(URLs.MESSAGES + '/' + id, {message})
+    .then((response) => response.data)
 }
