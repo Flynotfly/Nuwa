@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from chat.models import Character, Chat
@@ -38,6 +39,7 @@ class ChatCreateSerializer(serializers.Serializer):
             description=character.description,
             is_hidden_prompt=character.is_hidden_prompt,
             is_active=True,
+            last_message_datetime=timezone.now(),
         )
         return chat
 

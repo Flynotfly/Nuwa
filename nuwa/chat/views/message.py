@@ -2,7 +2,6 @@ from rest_framework import generics
 
 from chat.models import Message
 from chat.serializers.message import MessageSerializer, MessageUpdateSerializer
-from chat.permissions import IsOwner
 
 
 class MessageListView(generics.ListAPIView):
@@ -20,6 +19,6 @@ class MessageUpdateView(generics.UpdateAPIView):
     http_method_names = ["patch"]
 
     def get_queryset(self):
-        return Message.object.filter(
+        return Message.objects.filter(
             owner=self.request.user,
         )
