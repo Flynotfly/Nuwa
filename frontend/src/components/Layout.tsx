@@ -40,6 +40,8 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../auth/AuthProvider';
 
+const DRAWER_WIDTH = 280;
+
 // Define navigation items with better organization
 const navigationConfig = {
   public: [
@@ -268,7 +270,7 @@ const Layout = () => {
   const drawerContent = (
     <Box
       sx={{
-        width: 280,
+        width: DRAWER_WIDTH,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -505,7 +507,7 @@ const Layout = () => {
           display: { xs: 'block', sm: 'none' },
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
-            width: 280,
+            width: DRAWER_WIDTH,
             backgroundColor: 'background.default',
           },
         }}
@@ -513,19 +515,16 @@ const Layout = () => {
         {drawerContent}
       </Drawer>
 
-      {/* Permanent drawer on desktop - FIXED */}
+      {/* Permanent drawer on desktop */}
       <Drawer
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
-          width: 280,
+          width: DRAWER_WIDTH,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
-            width: 280,
-            position: 'fixed',
-            height: '100vh',
-            overflowY: 'auto',
+            width: DRAWER_WIDTH,
             backgroundColor: 'background.default',
             borderRight: 'none',
             boxShadow: '2px 0 8px rgba(0,0,0,0.08)',
@@ -542,19 +541,17 @@ const Layout = () => {
         sx={{
           flexGrow: 1,
           bgcolor: 'background.default',
-          width: { sm: `calc(100% - 280px)` },
-          ml: { sm: '280px' },
           minHeight: '100vh',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {/* App Bar with gradient */}
+        {/* App Bar */}
         <AppBar
           position="fixed"
           sx={{
-            width: { sm: `calc(100% - 280px)` },
-            ml: { sm: '280px' },
+            width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
+            ml: { sm: `${DRAWER_WIDTH}px` },
             zIndex: theme.zIndex.drawer + 1,
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
@@ -611,7 +608,7 @@ const Layout = () => {
         {/* Spacer for fixed app bar */}
         <Toolbar sx={{ minHeight: 64 }} />
 
-        {/* Main content area - FIXED: Wrapped Outlet in Box for proper DOM node */}
+        {/* Main content area */}
         <Box
           sx={{
             flexGrow: 1,
@@ -619,7 +616,6 @@ const Layout = () => {
             overflow: 'auto',
           }}
         >
-          {/* CRITICAL FIX: Wrap Outlet in Box to provide DOM node for transitions */}
           <Fade in={contentReady} timeout={400}>
             <Box sx={{ width: '100%' }}>
               <Outlet />
