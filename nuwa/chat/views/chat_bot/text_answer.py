@@ -84,7 +84,7 @@ def handle_stream_response(
             yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
             return
         ai_response = "".join(collected_chunks)
-        handle_save_messages(
+        returned_messages = handle_save_messages(
             chat=chat,
             user=user,
             previous_message=previous_message,
@@ -94,7 +94,7 @@ def handle_stream_response(
             received_at=received_at,
             meta_info=meta_info
         )
-        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'messages': messages})}\n\n"
     response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
     response["Cache-control"] = "no-cache"
     response["X-Accel-Buffering"] = "no"
@@ -178,6 +178,7 @@ def handle_save_messages(
             {"messages": returned_messages},
             status=status.HTTP_200_OK,
         )
+    return returned_messages
 
 
 def generate_text(
