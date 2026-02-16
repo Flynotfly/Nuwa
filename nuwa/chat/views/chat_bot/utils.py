@@ -11,7 +11,7 @@ def get_last_n_messages(
     previous_message: Message,
     chat: Chat,
     user,
-    n: int = 30,
+    n: int,
 ):
     message_history_ids = previous_message.history
     all_message_ids = list(message_history_ids) + [previous_message.pk]
@@ -27,7 +27,7 @@ def append_text_messages_from_history(
     previous_message: Message,
     chat: Chat,
     user,
-    qnt_of_appended_messages: int = 30,
+    qnt_of_appended_messages: int = 60,
 ):
     history = get_last_n_messages(
         previous_message=previous_message,
