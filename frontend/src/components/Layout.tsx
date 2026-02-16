@@ -22,7 +22,6 @@ import {
   useMediaQuery,
   CssBaseline,
   Avatar,
-  Chip,
   Tooltip,
   Fade,
   Badge,
@@ -70,7 +69,6 @@ const navigationConfig = {
       icon: <AddIcon />,
       path: '/characters/new',
       description: 'Design your own AI companion',
-      variant: 'primary'
     },
   ],
   settings: [
@@ -125,17 +123,20 @@ const Layout = () => {
     }
   };
 
-  // Determine active tab with better matching logic
+  // Determine active tab based on current page
   const getActiveTab = () => {
     const currentPath = location.pathname;
 
     // Exact match for home
     if (currentPath === '/') return '/';
 
-    // Find best match
-    const activeItem = navigationItems.find(item =>
-      currentPath.startsWith(item.path) &&
-      currentPath.length >= item.path.length
+    // Sort by path length descending so longer (more specific) paths match first
+    const sortedItems = [...navigationItems].sort(
+      (a, b) => b.path.length - a.path.length
+    );
+
+    const activeItem = sortedItems.find(
+      (item) => item.path !== '/' && currentPath.startsWith(item.path)
     );
 
     return activeItem?.path || '';
@@ -326,7 +327,6 @@ const Layout = () => {
       <List sx={{ px: 1.5, py: 1, flexGrow: 1 }}>
         {navigationItems.map((item) => {
           const isActive = activeTab === item.path;
-          const isPrimary = item.variant === 'primary';
 
           return (
             <Tooltip
@@ -348,20 +348,20 @@ const Layout = () => {
                   py: 1.25,
                   transition: 'all 0.2s ease',
                   backgroundColor: isActive
-                    ? (isPrimary ? 'primary.main' : 'primary.light')
+                    ? 'primary.light'
                     : 'transparent',
                   color: isActive
-                    ? (isPrimary ? 'primary.contrastText' : 'primary.contrastText')
+                    ? 'primary.contrastText'
                     : 'text.primary',
                   '&:hover': {
-                    backgroundColor: isPrimary
-                      ? 'primary.dark'
+                    backgroundColor: isActive
+                      ? 'primary.main'
                       : 'action.hover',
                     transform: 'translateX(4px)',
                   },
                   '& .MuiListItemIcon-root': {
                     color: isActive
-                      ? (isPrimary ? 'primary.contrastText' : 'primary.contrastText')
+                      ? 'primary.contrastText'
                       : 'text.secondary',
                     minWidth: 40,
                   },
@@ -381,18 +381,6 @@ const Layout = () => {
                     variant: 'subtitle1'
                   }}
                 />
-                {isPrimary && (
-                  <Chip
-                    label="New"
-                    size="small"
-                    color="secondary"
-                    sx={{
-                      height: 20,
-                      fontSize: '0.65rem',
-                      fontWeight: 700
-                    }}
-                  />
-                )}
               </ListItem>
             </Tooltip>
           );
