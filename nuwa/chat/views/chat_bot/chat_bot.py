@@ -18,6 +18,7 @@ class ChatBotView(APIView):
         chat_id = request.data.get("chat_id")
         previous_message_id = request.data.get("previous_message_id", None)
         is_user_message = request.data.get("is_user_message", False)
+        stream = request.data.get("stream", False)
         answer_type = request.data.get("answer_type", "detect")
 
         if user_input is not None:
@@ -45,6 +46,19 @@ class ChatBotView(APIView):
                 {"error": "Wrong 'is_user_message'. Allowed only boolean type."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        if stream == "false":
+            stream = False
+        elif stream == "true":
+            stream = True
+        elif stream == "True" or stream == "False":
+            stream = bool(stream)
+        if stream is not False and stream is not True:
+            return Response(
+                {"error": "Wrong 'stream'. Allowed only boolean type."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if is_user_message and not user_input:
             return Response(
                 {
@@ -87,6 +101,7 @@ class ChatBotView(APIView):
                     user_input=user_input,
                     user=self.request.user,
                     received_at=received_at,
+                    is_stream=stream,
                 )
             case "image":
                 return generate_image_answer(
