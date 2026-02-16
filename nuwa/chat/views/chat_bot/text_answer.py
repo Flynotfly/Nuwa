@@ -94,7 +94,7 @@ def handle_stream_response(
             received_at=received_at,
             meta_info=meta_info
         )
-        yield f"data: {json.dumps({'type': 'done', 'messages': messages})}\n\n"
+        yield f"data: {json.dumps({'type': 'done', 'messages': returned_messages})}\n\n"
     response = StreamingHttpResponse(event_stream(), content_type="text/event-stream")
     response["Cache-control"] = "no-cache"
     response["X-Accel-Buffering"] = "no"
