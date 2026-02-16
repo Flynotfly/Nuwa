@@ -130,6 +130,7 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertEqual(response["content-Type"], "text/event-stream")
         chunks = []
         done_received = False
+        messages = None
         for line in response.streaming_content:
             decoded = line.decode("utf-8") if isinstance(line, bytes) else line
             for part in decoded.strip().split("\n"):
@@ -139,7 +140,9 @@ Always respond as if you’re fully present, emotionally invested, and turned on
                         chunks.append(data["content"])
                     elif data["type"] == "done":
                         done_received = True
+                        messages = data["messages"]
         ai_response = "".join(chunks)
+        print(messages)
         print(ai_response)
         self.assertTrue(len(ai_response) > 0)
         self.assertTrue(done_received)
