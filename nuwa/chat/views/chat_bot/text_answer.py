@@ -69,7 +69,7 @@ def handle_stream_response(
         received_at,
 ):
     def event_stream():
-        collected_chuncks = []
+        collected_chunks = []
         meta_info = {}
         try:
             stream, meta_info = generate_text(
@@ -77,13 +77,13 @@ def handle_stream_response(
                 stream=True,
                 **MODELS["text_answer"],
             )
-            for chunck in stream:
-                collected_chuncks.append(chunck)
-                yield f"data: {json.dumps({'type': 'chunck', 'content': chunck})}\n\n"
+            for chunk in stream:
+                collected_chunks.append(chunk)
+                yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'detail': 'str(e)'})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
             return
-        ai_response = "".join(collected_chuncks)
+        ai_response = "".join(collected_chunks)
         handle_save_messages(
             chat=chat,
             user=user,
@@ -270,7 +270,7 @@ def generate_with_ollama_cloud_stream(
             if content:
                 yield content
 
-    return stream_generator, meta_info
+    return stream_generator(), meta_info
 
 
 openrouter_client = OpenAI(
