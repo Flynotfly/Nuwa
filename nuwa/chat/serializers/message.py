@@ -15,3 +15,11 @@ class MessageSerializer(serializers.ModelSerializer):
             "conducted",
             "history",
         ]
+
+
+class MessageUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = [
+            "message",
+        ]
