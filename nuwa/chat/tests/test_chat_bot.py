@@ -1,3 +1,5 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -112,6 +114,35 @@ Always respond as if you’re fully present, emotionally invested, and turned on
         self.assertEqual(last_message.history, messages_ids[:-1])
         self.chat.refresh_from_db()
         self.assertEqual(self.chat.structure, messages_ids)
+
+    def test_stream_text_response(self):
+        response = self.client.post(
+            get_chat_url(),
+            {
+                "message": "I played tennis today!",
+                "is_user_message": "True",
+                "chat_id": self.chat.pk,
+                "answer_type": "text",
+                "stream": "true",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["content-Type"], "text/event-stream")
+        chunks = []
+        done_received = False
+        for line in response.streaming_content:
+            decoded = line.decode("utf-8") if isinstance(line, bytes) else line
+            for part in decoded.strip().split("\n"):
+                if part.startswith("data: "):
+                    data = json.loads(part[6:])
+                    if data["type"] == "chunk":
+                        chunks.append(data["content"])
+                    elif data["type"] == "done":
+                        done_received = True
+        ai_response = "".join(chunks)
+        print(ai_response)
+        self.assertTrue(len(ai_response) > 0)
+        self.assertTrue(done_received)
 
     def test_gen_image_without_user_message(self):
         response = self.client.post(
