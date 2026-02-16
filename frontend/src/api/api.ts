@@ -247,3 +247,78 @@ export function sendChatMessage(
       throw error;
     });
 }
+
+export function sendChatMessageStream(
+  chat_id: number,
+  message: string,
+  is_user_message: boolean,
+  onChunk: (content: string) => void,
+  onDone: (messages: ChatMessage[]) => void,
+  onError: (error: string) => void,
+  previous_message_id?: number | null,
+): { abort: () => void } {
+  const payload: Record<string, unknown> = {
+    message,
+    chat_id,
+    answer_type: "text",
+    is_user_message,
+    stream: true,
+  };
+  if (previous_message_id !== undefined && previous_message_id !== null) {
+    payload.previous_message_id = previous_message_id;
+  }
+
+  const controller = new AbortController();
+
+  api.post(URLs.CHATTING, payload, {
+    responseType: "stream",
+    adapter: "fetch",
+    signal: controller.signal,
+  })
+    .then(async (response) => {
+      const reader = response.data.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith("data: ")) continue;
+
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+
+            if (data.type === "chunk") {
+              onChunk(data.content);
+            } else if (data.type === "done") {
+              const transformedMessages: ChatMessage[] = data.messages.map(
+                (msg: any) => ({
+                  ...msg,
+                  conducted: dayjs(msg.conducted),
+                })
+              );
+              onDone(transformedMessages);
+            } else if (data.type === "error") {
+              onError(data.detail);
+            }
+          } catch (e) {
+            // skip malformed SSE lines
+          }
+        }
+      }
+    })
+    .catch((error) => {
+      if (error.name !== "CanceledError") {
+        onError(error.message);
+      }
+    });
+
+  return { abort: () => controller.abort() };
+}

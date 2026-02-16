@@ -21,7 +21,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import DownloadIcon from '@mui/icons-material/Download';
 import dayjs from 'dayjs';
 import { useParams } from 'react-router-dom';
-import { getChatDetail, getAllMessages, sendChatMessage } from '../api/api';
+import { getChatDetail, getAllMessages, sendChatMessage, sendChatMessageStream } from '../api/api';
 import {AnswerType, ChatMessage} from '../types/chatting';
 import { ChatDetail } from '../types/chat';
 import { updateChatStructure, removeLastElementIfNotEmpty, findBranches, rebaseBranch } from '../utils';
@@ -50,6 +50,8 @@ const ChatBot = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPrompt, setShowPrompt] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
+  const [streamAbort, setStreamAbort] = useState<(() => void) | null>(null);
 
   const formRef = React.useRef<HTMLFormElement>(null);
   const imageLoadStatus = useRef<Record<string, boolean>>({});
@@ -239,48 +241,93 @@ const ChatBot = () => {
   const sendMessage = async (isEdit: boolean, _lastMessageId: number, is_gen_image: boolean) => {
     setLoading(true);
     setError('');
-    try {
-      const sendPreviousMessageId = _lastMessageId;
-      const messageToSend = isEdit ? editMessageText.trim() : inputMessage.trim();
-      const answerType: AnswerType = is_gen_image ? 'image' : 'text';
-      const res = await sendChatMessage(
-        chatId,
-        messageToSend,
-        answerType,
-        !is_gen_image,
-        sendPreviousMessageId,
-      );
-      const newMessages = res.messages;
-      if (!Array.isArray(newMessages) || newMessages.length === 0) {
-        console.error("Received empty messages array from API");
-        return;
+    const sendPreviousMessageId = _lastMessageId;
+    const messageToSend = isEdit ? editMessageText.trim() : inputMessage.trim();
+    if (is_gen_image) {
+      try {
+        const answerType = 'image';
+        const res = await sendChatMessage(
+          chatId,
+          messageToSend,
+          answerType,
+          !is_gen_image,
+          sendPreviousMessageId,
+        );
+        handleNewMessages(res.messages, sendPreviousMessageId);
+      } catch (err) {
+        console.error('Chat error:', err);
+        setCurrentMessages((prev) => prev.filter((msg) => msg.id !== -1));
+        setError('Failed to get response from AI.');
+      } finally {
+        setLoading(false);
       }
-      setAllMessages((prev) => [...prev, ...newMessages]);
-      setCurrentMessages((prev) =>
-        [...prev.filter((msg) => msg.id !== -1), ...newMessages]
-      );
-      setLastMessageId(newMessages[newMessages.length - 1].id);
-      let updatedStructure = chatStructure;
-      let currentParentId = sendPreviousMessageId;
-      for (const msg of newMessages) {
-        updatedStructure = updateChatStructure(
-          updatedStructure,
-          currentParentId,
-          msg.id,
-          removeLastElementIfNotEmpty(msg.history),
-        )
-        currentParentId = msg.id;
-      }
-      setChatStructure(updatedStructure);
-      setBranchesChoices((prev) => [...prev, ...Array(newMessages.length).fill(1)]);
-      setChosenBranches((prev) => [...prev, ...Array(newMessages.length).fill(0)]);
-    } catch (err) {
-      console.error('Chat error:', err);
-      setCurrentMessages((prev) => prev.filter((msg) => msg.id !== -1));
-      setError('Failed to get response from AI.');
-    } finally {
-      setLoading(false);
+      return;
     }
+    const placeholderAssistant: ChatMessage = {
+      id: -2,
+      role: 'assistant',
+      message: '',
+      media_type: 'text',
+      media: '',
+      conducted: dayjs(),
+      history: [],
+    }
+    setCurrentMessages((prev) => [...prev, placeholderAssistant]);
+    setStreamingText('');
+    const {abort} = sendChatMessageStream(
+      chatId,
+      messageToSend,
+      !is_gen_image,
+      (chunk) => {
+        setStreamingText((prev) => {
+          const updated = prev + chunk;
+          setCurrentMessages((msgs) =>
+            msgs.map((m) => m.id === -2 ? {...m, message: updated} : m)
+          );
+          return updated;
+        })
+      },
+      (messages) => {
+          setStreamingText('');
+          setCurrentMessages((prev) => prev.filter((msg) => msg.id !== -1 && msg.id !== -2));
+          handleNewMessages(messages, sendPreviousMessageId);
+          setLoading(false);
+      },
+      (errorMsg) => {
+        console.error('Stream error:', errorMsg);
+        setCurrentMessages((prev) => prev.filter((msg) => msg.id !== -1 && msg.id !== -2));
+        setError('Failed to get response from AI.');
+        setLoading(false);
+      },
+      sendPreviousMessageId,
+    );
+    setStreamAbort(() => abort);
+  }
+
+  const handleNewMessages = (newMessages: ChatMessage[], sendPreviousMessageId: number | null) => {
+    if (!Array.isArray(newMessages) || newMessages.length === 0) {
+      console.error("Received empty messages array from API");
+      return;
+    }
+    setAllMessages((prev) => [...prev, ...newMessages]);
+    setCurrentMessages((prev) =>
+      [...prev.filter((msg) => msg.id !== -1), ...newMessages]
+    );
+    setLastMessageId(newMessages[newMessages.length - 1].id);
+    let updatedStructure = chatStructure;
+    let currentParentId = sendPreviousMessageId;
+    for (const msg of newMessages) {
+      updatedStructure = updateChatStructure(
+        updatedStructure,
+        currentParentId,
+        msg.id,
+        removeLastElementIfNotEmpty(msg.history),
+      )
+      currentParentId = msg.id;
+    }
+    setChatStructure(updatedStructure);
+    setBranchesChoices((prev) => [...prev, ...Array(newMessages.length).fill(1)]);
+    setChosenBranches((prev) => [...prev, ...Array(newMessages.length).fill(0)]);
   }
 
   const handleCloseSnackbar = () => {
