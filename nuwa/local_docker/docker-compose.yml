@@ -9,7 +9,7 @@ services:
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=postgres
         ports:
-            - "5441:5432"
+            - "5441:5433"
     rabbitmq:
         image: rabbitmq:4.2.3-management
         restart: no
