@@ -1,5 +1,5 @@
-from datetime import datetime
-from sqlalchemy import JSON, func, ForeignKey, String, Index, Enum
+from datetime import datetime, time
+from sqlalchemy import JSON, func, ForeignKey, String, Index, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 
 
@@ -21,6 +21,7 @@ class User(Base):
     characters: Mapped[list["Character"]] = relationship(back_populates="owner")
     chats: Mapped[list["Chat"]] = relationship(back_populates="owner")
     messages: Mapped[list["Message"]] = relationship(back_populates="owner")
+    scheduled_tasks: Mapped[list["ScheduledTask"]] = relationship(back_populates="owner")
 
     def __repr__(self):
         return f"<User {self.id} {self.username}>"
@@ -75,6 +76,7 @@ class Chat(Base):
     character: Mapped["Character"] = relationship(back_populates="chats")
     last_message: Mapped["Message" | None] = relationship(foreign_keys=[last_message_id])
     messages: Mapped[list["Message"]] = relationship(back_populates="chat")
+    scheduled_tasks: Mapped[list["ScheduledTask"]] = relationship(back_populates="chat")
 
     __table_args__ = (
         Index("ix_chat_last_msg_dt_desc", last_message_datetime.desc()),
@@ -119,3 +121,33 @@ class Message(Base):
             f"<Message of user {self.owner_id} in chat "
             f"{self.chat_id} at {self.conducted}"
         )
+
+
+class ScheduledTask(Base):
+    __tablename__ = "scheduled_task"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chat.id", ondelete="CASCADE"))
+    center_time: Mapped[time]
+    delta_minutes: Mapped[int]
+    user_timezone: Mapped[int]
+    prompt: Mapped[str | None] = mapped_column(default=None)
+    use_time: Mapped[bool]
+    is_active: Mapped[bool] = mapped_column(default=True)
+
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    edited_at: Mapped[datetime] = mapped_column(onupdate=func.now(), default=func.now())
+
+    owner: Mapped["User"] = relationship(back_populates="scheduled_tasks")
+    chat: Mapped["Chat"] = relationship(back_populates="scheduled_tasks")
+
+    __table_args__ = (
+        CheckConstraint("delta_minutes >= 0 and delta_minutes <= 360", name="ck_delta_minutes"),
+        Index("ix_scheduled_task_created_at_desc", created_at.desc()),
+    )
+
+    def __repr__(self):
+        return f"<ScheduledTask of user {self.owner_id} at {self.center_time} +- {self.delta_minutes} minutes>"
+
+
