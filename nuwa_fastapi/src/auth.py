@@ -1,14 +1,14 @@
-import bcrypt
-
-from typing import Annotated
-from fastapi import HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta, timezone
-from sqlalchemy.orm import Session
-from jose import JWTError, jwt
+from typing import Annotated
 
-from src.db_connection import get_db
+import bcrypt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+
 from src.database import User
+from src.db_connection import get_db
 
 SECRET_KEY = "unprotected-lkfermfe23423fkermflkerfkmsdfesfrefreg"
 ALGORITHM = "HS256"
