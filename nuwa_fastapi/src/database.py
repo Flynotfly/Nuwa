@@ -1,0 +1,121 @@
+from datetime import datetime
+from sqlalchemy import JSON, func, ForeignKey, String, Index, Enum
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
+
+
+class Base(DeclarativeBase):
+    ...
+
+
+class User(Base):
+    __tablename__ = "user"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(unique=True, index=True)
+    hashed_password: Mapped[str]
+    is_active: Mapped[bool] = mapped_column(default=True)
+
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    edited_at: Mapped[datetime] = mapped_column(onupdate=func.now(), default=func.now())
+
+    characters: Mapped[list["Character"]] = relationship(back_populates="owner")
+    chats: Mapped[list["Chat"]] = relationship(back_populates="owner")
+    messages: Mapped[list["Message"]] = relationship(back_populates="owner")
+
+    def __repr__(self):
+        return f"<User {self.id} {self.username}>"
+
+
+class Character(Base):
+    __tablename__ = "character"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(50), index=True)
+    system_prompt: Mapped[str]
+    description: Mapped[str | None] = mapped_column(default=None)
+    is_private: Mapped[bool]
+    is_hidden_prompt: Mapped[bool]
+    is_active: Mapped[bool] = mapped_column(default=True)
+
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    edited_at: Mapped[datetime] = mapped_column(onupdate=func.now(), default=func.now())
+
+    owner: Mapped["User"] = relationship(back_populates="characters")
+    chats: Mapped[list["Chat"]] = relationship(back_populates="character")
+
+    def __repr__(self):
+        return (
+            f"<{'Public' if not self.is_private else 'Private'}"
+            f"character {self.name} of user {self.owner_id}>"
+        )
+
+
+class Chat(Base):
+    __tablename__ = "chat"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    character_id: Mapped[int] = mapped_column(ForeignKey("character.id", ondelete="CASCADE"))
+    character_name: Mapped[str] = mapped_column(String(50))
+    system_prompt: Mapped[str]
+    description: Mapped[str | None] = mapped_column(default=None)
+    is_hidden_prompt: Mapped[bool]
+    is_active: Mapped[bool] = mapped_column(default=True)
+
+    last_message_id: Mapped[int | None] = mapped_column(ForeignKey("message.id", ondelete="SET NULL"))
+    last_message_text: Mapped[str | None] = mapped_column(default=None)
+    last_message_datetime: Mapped[datetime]
+    structure: Mapped[list] = mapped_column(JSON, default=list)
+
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    edited_at: Mapped[datetime] = mapped_column(onupdate=func.now(), default=func.now())
+
+    owner: Mapped["User"] = relationship(back_populates="chats")
+    character: Mapped["Character"] = relationship(back_populates="chats")
+    last_message: Mapped["Message" | None] = relationship(foreign_keys=[last_message_id])
+    messages: Mapped[list["Message"]] = relationship(back_populates="chat")
+
+    __table_args__ = (
+        Index("ix_chat_last_msg_dt_desc", last_message_datetime.desc()),
+        Index("ix_chat_owner_last_msg_dt_desc", "owner_id", last_message_datetime.desc()),
+    )
+
+    def __repr__(self):
+        return (
+            f"<Chat of user {self.owner_id} and character "
+            f"{self.character_id} {self.character_name}"
+        )
+
+
+class Message(Base):
+    __tablename__ = "message"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chat.id", ondelete="CASCADE"))
+    role: Mapped[str] = mapped_column(String(9))
+    media_type: Mapped[str] = mapped_column(String(5))
+    message: Mapped[str | None] = mapped_column(default=None)
+    media: Mapped[str | None] = mapped_column(default=None)
+    is_active: Mapped[bool] = mapped_column(default=True)
+    conducted: Mapped[datetime]
+    history: Mapped[list] = mapped_column(JSON, default=list)
+    info: Mapped[dict | None] = mapped_column(JSON, default=None)
+
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    edited_at: Mapped[datetime] = mapped_column(onupdate=func.now(), default=func.now())
+
+    owner: Mapped["User"] = relationship(back_populates="messages")
+    chat: Mapped["Chat"] = relationship(back_populates="messages")
+
+    __table_args__ = (
+        Index("ix_message_chat_conducted_desc", "chat_id", conducted.desc()),
+        Index("ix_message_owner_chat_conducted_desc", "owner_id", "chat_id", conducted.desc()),
+    )
+
+    def __repr__(self):
+        return (
+            f"<Message of user {self.owner_id} in chat "
+            f"{self.chat_id} at {self.conducted}"
+        )
