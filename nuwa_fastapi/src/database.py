@@ -1,5 +1,5 @@
 from datetime import datetime, time
-from sqlalchemy import JSON, func, ForeignKey, String, Index, CheckConstraint
+from sqlalchemy import JSON, func, ForeignKey, String, Index, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase, relationship
 
 
@@ -22,6 +22,7 @@ class User(Base):
     chats: Mapped[list["Chat"]] = relationship(back_populates="owner")
     messages: Mapped[list["Message"]] = relationship(back_populates="owner")
     scheduled_tasks: Mapped[list["ScheduledTask"]] = relationship(back_populates="owner")
+    scheduled_messages: Mapped[list["ScheduledMessage"]] = relationship(back_populates="owner")
 
     def __repr__(self):
         return f"<User {self.id} {self.username}>"
@@ -77,6 +78,7 @@ class Chat(Base):
     last_message: Mapped["Message" | None] = relationship(foreign_keys=[last_message_id])
     messages: Mapped[list["Message"]] = relationship(back_populates="chat")
     scheduled_tasks: Mapped[list["ScheduledTask"]] = relationship(back_populates="chat")
+    scheduled_messages: Mapped[list["ScheduledMessage"]] = relationship(back_populates="chat")
 
     __table_args__ = (
         Index("ix_chat_last_msg_dt_desc", last_message_datetime.desc()),
@@ -110,6 +112,7 @@ class Message(Base):
 
     owner: Mapped["User"] = relationship(back_populates="messages")
     chat: Mapped["Chat"] = relationship(back_populates="messages")
+    scheduled_message: Mapped[list["ScheduledMessage"]] = relationship(back_populates="message")
 
     __table_args__ = (
         Index("ix_message_chat_conducted_desc", "chat_id", conducted.desc()),
@@ -141,9 +144,10 @@ class ScheduledTask(Base):
 
     owner: Mapped["User"] = relationship(back_populates="scheduled_tasks")
     chat: Mapped["Chat"] = relationship(back_populates="scheduled_tasks")
+    scheduled_messages: Mapped["ScheduledMessage" | None] = relationship(back_populates="task")
 
     __table_args__ = (
-        CheckConstraint("delta_minutes >= 0 and delta_minutes <= 360", name="ck_delta_minutes"),
+        CheckConstraint("delta_minutes >= 0 AND delta_minutes <= 360", name="ck_delta_minutes"),
         Index("ix_scheduled_task_created_at_desc", created_at.desc()),
     )
 
@@ -151,3 +155,37 @@ class ScheduledTask(Base):
         return f"<ScheduledTask of user {self.owner_id} at {self.center_time} +- {self.delta_minutes} minutes>"
 
 
+class ScheduledMessage(Base):
+    __tablename__ = "scheduled_message"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    task_id: Mapped[int | None] = mapped_column(ForeignKey("scheduled_task.id", ondelete="CASCADE"), default=None)
+    chat_id: Mapped[int] = mapped_column(ForeignKey("chat.id", ondelete="CASCADE"))
+    message_id: Mapped[int | None] = mapped_column(ForeignKey("message.id", ondelete="SET NULL"), default=None)
+    scheduled_at: Mapped[datetime]
+    is_sent: Mapped[bool] = mapped_column(default=False)
+    sent_at: Mapped[datetime | None] = mapped_column(default=None)
+    prompt: Mapped[str | None] = mapped_column(default=None)
+    use_time: Mapped[bool]
+
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    edited_at: Mapped[datetime] = mapped_column(onupdate=func.now(), default=func.now())
+
+    owner: Mapped["User"] = relationship(back_populates="scheduled_messages")
+    task: Mapped["ScheduledTask"] = relationship(back_populates="scheduled_messages")
+    chat: Mapped["Chat"] = relationship(back_populates="scheduled_messages")
+    message: Mapped["Message" | None] = relationship(back_populates="scheduled_message")
+
+    __table_args__ = (
+        Index("ix_scheduled_message_scheduled_at_desc", scheduled_at.desc()),
+        UniqueConstraint("task_id", "scheduled_at", name="uq_task_scheduled_at")
+    )
+
+    def __repr__(self):
+        message = f"<ScheduledMessage of user {self.owner_id} in chat {self.chat_id} scheduled at {self.scheduled_at} "
+        if self.is_sent:
+            message = message + f"was sent at {self.sent_at}>"
+        else:
+            message = message + "has not been sent yet>"
+        return message
