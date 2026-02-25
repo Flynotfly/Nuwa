@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Annotated
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 
 from src.database import User, Character
 from src.auth import get_current_user, get_current_user_optional
@@ -23,11 +24,11 @@ def raise_non_found_error(instance_id):
     )
 
 
-@character_router.get("", response_model=CharacterRetrieveAll)
+@character_router.get("", response_model=list[CharacterRetrieveAll])
 def retrieve_all_characters(
         user: CurrentUserOptional,
         db: DB,
-        only_user: bool | None = None,
+        only_user: bool = False,
 ):
     if only_user:
         if user is None:
@@ -49,7 +50,7 @@ def create_character(
         db: DB,
 ):
     data = payload.model_dump()
-    data["owner"] = user.id
+    data["owner_id"] = user.id
     instance = Character(**data)
     db.add(instance)
     db.commit()
@@ -99,7 +100,7 @@ def update_character(
 
 
 @character_router.patch("/{instance_id}", response_model=CharacterRetrieve)
-def update_character(
+def partially_update_character(
         instance_id: int,
         payload: CharacterPartiallyUpdate,
         user: CurrentUser,
@@ -120,7 +121,7 @@ def update_character(
     return db_instance
 
 
-@character_router.patch("/{instance_id}", status_code=204)
+@character_router.delete("/{instance_id}", status_code=204)
 def destroy_character(
         instance_id: int,
         user: CurrentUser,
@@ -135,4 +136,4 @@ def destroy_character(
         raise_non_found_error(instance_id)
     db_instance.is_active = False
     db.commit()
-    return {}
+    return None
