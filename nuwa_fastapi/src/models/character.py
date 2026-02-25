@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CharacterRetrieveAll(BaseModel):
@@ -24,14 +24,17 @@ class CharacterPartiallyUpdate(BaseModel):
 
 
 class CharacterRetrieve(BaseModel):
+    model_config = ConfigDict(
+        validate_by_name=True,
+        serialize_by_alias=True,
+        from_attributes=True,
+    )
+
     id: str
-    owner_id: int
+    owner_id: int = Field(serialization_alias="owner")
     owner_username: str
     name: str
     description: str
     system_prompt: str
     is_private: bool
     is_hidden_prompt: bool
-
-    class Config:
-        from_attributes = True
