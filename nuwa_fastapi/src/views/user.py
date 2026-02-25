@@ -8,7 +8,7 @@ from src.models.users import (RefreshTokenRequest, SignInModel, SignUpModel,
                               UserResponseModel)
 from src.services.users import authenticate_with_password, register_user
 
-user_router = APIRouter(prefix="/user")
+user_router = APIRouter(prefix="/user", tags=["user"])
 
 
 @user_router.post("/sign-up", response_model=UserResponseModel, status_code=201)

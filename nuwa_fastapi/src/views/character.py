@@ -10,7 +10,7 @@ from src.db_connection import get_db
 from src.models.character import (CharacterCreate, CharacterPartiallyUpdate,
                                   CharacterRetrieve, CharacterRetrieveAll)
 
-character_router = APIRouter(prefix="/characters")
+character_router = APIRouter(prefix="/characters", tags=["character"])
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
@@ -76,7 +76,7 @@ def retrieve_character(
     user: CurrentUser,
     db: DB,
 ):
-    db_instance = (
+    db_instance: Character | None = (
         db.query(Character)
         .options(joinedload(Character.owner))
         .filter(
@@ -91,6 +91,8 @@ def retrieve_character(
     )
     if db_instance is None:
         raise_non_found_error(instance_id)
+    if db_instance.is_hidden_prompt and db_instance.owner_id != user.id:
+        db_instance.system_prompt = ""
     return db_instance
 
 
