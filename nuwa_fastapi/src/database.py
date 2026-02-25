@@ -52,6 +52,10 @@ class Character(Base):
     owner: Mapped["User"] = relationship(back_populates="characters")
     chats: Mapped[list["Chat"]] = relationship(back_populates="character")
 
+    @property
+    def owner_username(self):
+        return self.owner.username if self.owner else None
+
     def __repr__(self):
         return (
             f"<{'Public' if not self.is_private else 'Private'}"
