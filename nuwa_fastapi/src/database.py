@@ -1,11 +1,12 @@
 from datetime import datetime, time
-
+from typing import Optional
 from sqlalchemy import (JSON, CheckConstraint, ForeignKey, Index, String,
                         UniqueConstraint, func)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-class Base(DeclarativeBase): ...
+class Base(DeclarativeBase):
+    ...
 
 
 class User(Base):
@@ -76,7 +77,7 @@ class Chat(Base):
         ForeignKey("message.id", ondelete="SET NULL")
     )
     last_message_text: Mapped[str | None] = mapped_column(default=None)
-    last_message_datetime: Mapped[datetime]
+    last_message_datetime: Mapped[datetime] = mapped_column()
     structure: Mapped[list] = mapped_column(JSON, default=list)
 
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
@@ -84,7 +85,7 @@ class Chat(Base):
 
     owner: Mapped["User"] = relationship(back_populates="chats")
     character: Mapped["Character"] = relationship(back_populates="chats")
-    last_message: Mapped["Message" | None] = relationship(
+    last_message: Mapped[Optional["Message"]] = relationship(
         foreign_keys=[last_message_id]
     )
     messages: Mapped[list["Message"]] = relationship(back_populates="chat")
@@ -118,7 +119,7 @@ class Message(Base):
     message: Mapped[str | None] = mapped_column(default=None)
     media: Mapped[str | None] = mapped_column(default=None)
     is_active: Mapped[bool] = mapped_column(default=True)
-    conducted: Mapped[datetime]
+    conducted: Mapped[datetime] = mapped_column()
     history: Mapped[list] = mapped_column(JSON, default=list)
     info: Mapped[dict | None] = mapped_column(JSON, default=None)
 
@@ -127,7 +128,7 @@ class Message(Base):
 
     owner: Mapped["User"] = relationship(back_populates="messages")
     chat: Mapped["Chat"] = relationship(back_populates="messages")
-    scheduled_message: Mapped[list["ScheduledMessage"]] = relationship(
+    scheduled_message: Mapped["ScheduledMessage"] = relationship(
         back_populates="message"
     )
 
@@ -166,7 +167,7 @@ class ScheduledTask(Base):
 
     owner: Mapped["User"] = relationship(back_populates="scheduled_tasks")
     chat: Mapped["Chat"] = relationship(back_populates="scheduled_tasks")
-    scheduled_messages: Mapped["ScheduledMessage" | None] = relationship(
+    scheduled_messages: Mapped[Optional["ScheduledMessage"]] = relationship(
         back_populates="task"
     )
 
@@ -193,7 +194,7 @@ class ScheduledMessage(Base):
     message_id: Mapped[int | None] = mapped_column(
         ForeignKey("message.id", ondelete="SET NULL"), default=None
     )
-    scheduled_at: Mapped[datetime]
+    scheduled_at: Mapped[datetime] = mapped_column()
     is_sent: Mapped[bool] = mapped_column(default=False)
     sent_at: Mapped[datetime | None] = mapped_column(default=None)
     prompt: Mapped[str | None] = mapped_column(default=None)
@@ -205,7 +206,7 @@ class ScheduledMessage(Base):
     owner: Mapped["User"] = relationship(back_populates="scheduled_messages")
     task: Mapped["ScheduledTask"] = relationship(back_populates="scheduled_messages")
     chat: Mapped["Chat"] = relationship(back_populates="scheduled_messages")
-    message: Mapped["Message" | None] = relationship(back_populates="scheduled_message")
+    message: Mapped[Optional["Message"]] = relationship(back_populates="scheduled_message")
 
     __table_args__ = (
         Index("ix_scheduled_message_scheduled_at_desc", scheduled_at.desc()),

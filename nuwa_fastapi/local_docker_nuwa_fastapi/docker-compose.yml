@@ -1,0 +1,18 @@
+services:
+    db:
+        image: postgres:18.1-alpine3.23
+        restart: no
+        volumes:
+            - ./data/db:/var/lib/postgres/data
+        environment:
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+        ports:
+            - "5440:5432"
+#    rabbitmq:
+#        image: rabbitmq:4.2.3-management
+#        restart: no
+#        ports:
+#            - "5672:5672"
+#            - "15672:15672"
