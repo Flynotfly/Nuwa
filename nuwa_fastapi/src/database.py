@@ -41,7 +41,7 @@ class Character(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(50), index=True)
     system_prompt: Mapped[str]
-    description: Mapped[str | None] = mapped_column(default=None)
+    description: Mapped[str] = mapped_column(default="")
     is_private: Mapped[bool]
     is_hidden_prompt: Mapped[bool]
     is_active: Mapped[bool] = mapped_column(default=True)
@@ -73,7 +73,7 @@ class Chat(Base):
     )
     character_name: Mapped[str] = mapped_column(String(50))
     system_prompt: Mapped[str]
-    description: Mapped[str | None] = mapped_column(default=None)
+    description: Mapped[str] = mapped_column(default="")
     is_hidden_prompt: Mapped[bool]
     is_active: Mapped[bool] = mapped_column(default=True)
 
