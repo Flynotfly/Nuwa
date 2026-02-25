@@ -1,6 +1,6 @@
-def main():
-    print("Hello from nuwa-fastapi!")
+from fastapi import FastAPI
 
+from src.router import router
 
-if __name__ == "__main__":
-    main()
+app = FastAPI()
+app.include_router(router)

@@ -12,7 +12,7 @@ from src.models.users import (
 from src.services.users import register_user, authenticate_with_password
 from src.auth import create_token_pair, refresh_access_token, get_current_user
 
-user_router = APIRouter()
+user_router = APIRouter(prefix="/user")
 
 
 @user_router.post("/sign-up", response_model=UserResponseModel, status_code=201)
