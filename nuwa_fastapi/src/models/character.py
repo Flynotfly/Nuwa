@@ -15,6 +15,14 @@ class CharacterCreate(BaseModel):
     is_hidden_prompt: bool
 
 
+class CharacterPartiallyUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    system_prompt: str | None = None
+    is_private: bool | None = None
+    is_hidden_prompt: bool | None = None
+
+
 class CharacterRetrieve(BaseModel):
     id: str
     owner_id: int

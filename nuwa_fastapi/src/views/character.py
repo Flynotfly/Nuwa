@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 from src.database import User, Character
 from src.auth import get_current_user, get_current_user_optional
 from src.db_connection import get_db
-from src.models.character import CharacterRetrieve, CharacterCreate, CharacterRetrieveAll
+from src.models.character import CharacterRetrieve, CharacterCreate, CharacterRetrieveAll, CharacterPartiallyUpdate
 
 
 character_router = APIRouter(prefix="/characters")
@@ -87,7 +87,7 @@ def update_character(
         Character.id == instance_id,
         Character.owner_id == user.id,
         Character.is_active == True,
-    )
+    ).first()
     if db_instance is None:
         raise_non_found_error(instance_id)
     update_data = payload.model_dump()
@@ -96,3 +96,43 @@ def update_character(
     db.commit()
     db.refresh(db_instance)
     return db_instance
+
+
+@character_router.patch("/{instance_id}", response_model=CharacterRetrieve)
+def update_character(
+        instance_id: int,
+        payload: CharacterPartiallyUpdate,
+        user: CurrentUser,
+        db: DB,
+):
+    db_instance = db.query(Character).filter(
+        Character.id == instance_id,
+        Character.owner_id == user.id,
+        Character.is_active == True,
+    ).first()
+    if db_instance is None:
+        raise_non_found_error(instance_id)
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_instance, field, value)
+    db.commit()
+    db.refresh(db_instance)
+    return db_instance
+
+
+@character_router.patch("/{instance_id}", status_code=204)
+def destroy_character(
+        instance_id: int,
+        user: CurrentUser,
+        db: DB,
+):
+    db_instance: Character | None = db.query(Character).filter(
+        Character.id == instance_id,
+        Character.owner_id == user.id,
+        Character.is_active == True,
+    ).first()
+    if db_instance is None:
+        raise_non_found_error(instance_id)
+    db_instance.is_active = False
+    db.commit()
+    return {}
