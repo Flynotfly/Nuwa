@@ -9,6 +9,8 @@ from src.database import Character, User
 from src.db_connection import get_db
 from src.models.character import (CharacterCreate, CharacterPartiallyUpdate,
                                   CharacterRetrieve, CharacterRetrieveAll)
+from src.views.utils import raise_non_found_error
+
 
 character_router = APIRouter(prefix="/characters", tags=["character"])
 
@@ -16,13 +18,6 @@ character_router = APIRouter(prefix="/characters", tags=["character"])
 CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentUserOptional = Annotated[User, Depends(get_current_user_optional)]
 DB = Annotated[Session, Depends(get_db)]
-
-
-def raise_non_found_error(instance_id):
-    raise HTTPException(
-        status_code=404,
-        detail=f"Character with id {instance_id} is not found",
-    )
 
 
 @character_router.get("", response_model=list[CharacterRetrieveAll])
@@ -41,15 +36,15 @@ def retrieve_all_characters(
             db.query(Character)
             .filter(
                 Character.owner_id == user.id,
-                Character.is_active == True,
+                Character.is_active.is_(True),
             )
             .all()
         )
     return (
         db.query(Character)
         .filter(
-            Character.is_private == False,
-            Character.is_active == True,
+            Character.is_private.is_(False),
+            Character.is_active.is_(True),
         )
         .all()
     )
@@ -81,16 +76,16 @@ def retrieve_character(
         .options(joinedload(Character.owner))
         .filter(
             Character.id == instance_id,
-            Character.is_active == True,
+            Character.is_active.is_(True),
             or_(
-                Character.is_private == False,
+                Character.is_private.is_(False),
                 Character.owner_id == user.id,
             ),
         )
         .first()
     )
     if db_instance is None:
-        raise_non_found_error(instance_id)
+        raise_non_found_error("Character", instance_id)
     if db_instance.is_hidden_prompt and db_instance.owner_id != user.id:
         db_instance.system_prompt = ""
     return db_instance
@@ -108,12 +103,12 @@ def update_character(
         .filter(
             Character.id == instance_id,
             Character.owner_id == user.id,
-            Character.is_active == True,
+            Character.is_active.is_(True),
         )
         .first()
     )
     if db_instance is None:
-        raise_non_found_error(instance_id)
+        raise_non_found_error("Character", instance_id)
     update_data = payload.model_dump()
     for field, value in update_data.items():
         setattr(db_instance, field, value)
@@ -134,12 +129,12 @@ def partially_update_character(
         .filter(
             Character.id == instance_id,
             Character.owner_id == user.id,
-            Character.is_active == True,
+            Character.is_active.is_(True),
         )
         .first()
     )
     if db_instance is None:
-        raise_non_found_error(instance_id)
+        raise_non_found_error("Character", instance_id)
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(db_instance, field, value)
@@ -159,12 +154,12 @@ def destroy_character(
         .filter(
             Character.id == instance_id,
             Character.owner_id == user.id,
-            Character.is_active == True,
+            Character.is_active.is_(True),
         )
         .first()
     )
     if db_instance is None:
-        raise_non_found_error(instance_id)
+        raise_non_found_error("Character", instance_id)
     db_instance.is_active = False
     db.commit()
     return None
