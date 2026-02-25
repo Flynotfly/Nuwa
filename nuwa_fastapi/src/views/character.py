@@ -16,6 +16,13 @@ CurrentUserOptional = Annotated[User, Depends(get_current_user_optional)]
 DB = Annotated[Session, Depends(get_db)]
 
 
+def raise_non_found_error(instance_id):
+    raise HTTPException(
+        status_code=404,
+        detail=f"Character with id {instance_id} is not found",
+    )
+
+
 @character_router.get("", response_model=CharacterRetrieveAll)
 def retrieve_all_characters(
         user: CurrentUserOptional,
@@ -35,6 +42,21 @@ def retrieve_all_characters(
     ).all()
 
 
+@character_router.post("", response_model=CharacterRetrieve, status_code=201)
+def create_character(
+        payload: CharacterCreate,
+        user: CurrentUser,
+        db: DB,
+):
+    data = payload.model_dump()
+    data["owner"] = user.id
+    instance = Character(**data)
+    db.add(instance)
+    db.commit()
+    db.refresh(instance)
+    return instance
+
+
 @character_router.get("/{instance_id}", response_model=CharacterRetrieve)
 def retrieve_character(
         instance_id: int,
@@ -50,8 +72,27 @@ def retrieve_character(
         ),
     ).first()
     if db_instance is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Character with id {instance_id} is not found",
-        )
+        raise_non_found_error(instance_id)
+    return db_instance
+
+
+@character_router.put("/{instance_id}", response_model=CharacterRetrieve)
+def update_character(
+        instance_id: int,
+        payload: CharacterCreate,
+        user: CurrentUser,
+        db: DB,
+):
+    db_instance = db.query(Character).filter(
+        Character.id == instance_id,
+        Character.owner_id == user.id,
+        Character.is_active == True,
+    )
+    if db_instance is None:
+        raise_non_found_error(instance_id)
+    update_data = payload.model_dump()
+    for field, value in update_data.items():
+        setattr(db_instance, field, value)
+    db.commit()
+    db.refresh(db_instance)
     return db_instance
