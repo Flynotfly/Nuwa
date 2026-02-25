@@ -1,12 +1,12 @@
 from datetime import datetime, time
 from typing import Optional
+
 from sqlalchemy import (JSON, CheckConstraint, ForeignKey, Index, String,
                         UniqueConstraint, func)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-class Base(DeclarativeBase):
-    ...
+class Base(DeclarativeBase): ...
 
 
 class User(Base):
@@ -210,7 +210,9 @@ class ScheduledMessage(Base):
     owner: Mapped["User"] = relationship(back_populates="scheduled_messages")
     task: Mapped["ScheduledTask"] = relationship(back_populates="scheduled_messages")
     chat: Mapped["Chat"] = relationship(back_populates="scheduled_messages")
-    message: Mapped[Optional["Message"]] = relationship(back_populates="scheduled_message")
+    message: Mapped[Optional["Message"]] = relationship(
+        back_populates="scheduled_message"
+    )
 
     __table_args__ = (
         Index("ix_scheduled_message_scheduled_at_desc", scheduled_at.desc()),

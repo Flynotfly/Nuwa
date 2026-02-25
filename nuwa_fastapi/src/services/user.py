@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 
-from src.database import User
 from src.auth import hash_password, verify_password
-from src.models.users import SignUpModel, SignInModel
+from src.database import User
+from src.models.users import SignInModel, SignUpModel
 
 
 def register_user(
