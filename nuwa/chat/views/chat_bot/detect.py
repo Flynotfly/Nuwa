@@ -2,7 +2,7 @@ from chat.views.chat_bot.text_answer import generate_text
 from chat.providers import MODELS
 
 
-ALLOWED_ANSWER_TYPES = {"detect", "text", "image", "video"}
+ALLOWED_ANSWER_TYPES = {"text", "image", "video"}
 
 
 def detect_answer_type(user_input):
@@ -16,7 +16,7 @@ def detect_answer_type(user_input):
         "If user write 'generate video' it is video."
         "If user write 'Hello, how are you' then it is text."
         "Available types of responses:"
-        "text, image, video."
+        f"{ALLOWED_ANSWER_TYPES}"
         "User prompt: "
     )
     messages = [
