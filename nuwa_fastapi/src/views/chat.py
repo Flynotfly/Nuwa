@@ -5,11 +5,11 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 
 from src.auth import get_current_user
-from src.database import User, Chat, Character
+from src.database import User, Chat, Character, Message
 from src.db_connection import get_db
 from src.models.chat import ChatCreate, ChatResponse, ChatRetrieveAll, ChatUpdate
+from src.models.message import MessageResponse
 from src.views.utils import raise_non_found_error
-
 
 chat_router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -131,3 +131,16 @@ def destroy_chat(
     instance.is_active = False
     db.commit()
     return None
+
+
+@chat_router.get("/{chat_id}/messages", response_model=MessageResponse)
+def retrieve_all_messages(
+        chat_id: int,
+        user: CurrentUser,
+        db: DB,
+):
+    return db.query(Message).filter(
+        Message.is_active.is_(True),
+        Message.chat_id == chat_id,
+        Message.owner_id == user.id,
+    ).all()
