@@ -4,9 +4,8 @@ from sqlalchemy.orm import Session
 from src.auth import create_token_pair, get_current_user, refresh_access_token
 from src.database import User
 from src.db_connection import get_db
-from src.models.users import (RefreshTokenRequest, SignInModel, SignUpModel,
-                              UserResponseModel)
-from src.services.users import authenticate_with_password, register_user
+from src.models.user import (RefreshTokenRequest, SignInModel, SignUpModel, UserResponseModel)
+from src.services.user import authenticate_with_password, register_user
 
 user_router = APIRouter(prefix="/user", tags=["user"])
 
