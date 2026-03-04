@@ -1,39 +1,46 @@
 from dataclasses import dataclass
-from sqlalchemy.orm import Session
-from fastapi import Depends, UploadFile
 from datetime import datetime, timezone
 
-from src.utils import update_chat_structure
-from src.db_connection import get_db
+from fastapi import Depends, UploadFile
+from sqlalchemy.orm import Session
+
 from src.auth import get_current_user
-from src.database import Message, User, Chat
-from src.services.message import add_message, MessageCreate
+from src.database import Chat, Message, User
+from src.db_connection import get_db
 from src.models.message import MessageResponse
+from src.services.message import MessageCreate, add_message
+from src.utils import update_chat_structure
 
 
 def get_last_n_messages(
-        previous_message: Message,
-        chat: Chat,
-        n: int,
-        user: User = Depends(get_current_user),
-        db: Session = Depends(get_db),
+    previous_message: Message,
+    chat: Chat,
+    n: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     message_history_ids = previous_message.history
     all_message_ids = list(message_history_ids) + [previous_message.id]
-    history = db.query(Message).filter(
-        Message.owner_id == user.id,
-        Message.id.in_(all_message_ids),
-        Message.chat_id == chat.id,
-    ).order_by(Message.conducted.desc()).limit(n).all()
+    history = (
+        db.query(Message)
+        .filter(
+            Message.owner_id == user.id,
+            Message.id.in_(all_message_ids),
+            Message.chat_id == chat.id,
+        )
+        .order_by(Message.conducted.desc())
+        .limit(n)
+        .all()
+    )
     history = reversed(history)
     return history
 
 
 def append_text_messages_from_history(
-        messages: list[dict],
-        previous_message: Message,
-        chat: Chat,
-        qnt_of_appended_messages: int = 60,
+    messages: list[dict],
+    previous_message: Message,
+    chat: Chat,
+    qnt_of_appended_messages: int = 60,
 ):
     history = get_last_n_messages(
         previous_message=previous_message,
@@ -60,11 +67,11 @@ MEDIA_TYPE_CHOICES_WITH_TEXT = {"text"}
 
 
 async def save_messages(
-        chat: Chat,
-        previous_message: Message | None,
-        messages: list,
-        user: User = Depends(get_current_user),
-        db: Session = Depends(get_db),
+    chat: Chat,
+    previous_message: Message | None,
+    messages: list,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     if previous_message:
         prev_message_history = previous_message.history
@@ -80,7 +87,11 @@ async def save_messages(
             role=message_data.role,
             media_type=message_data.media_type,
             message=message_data.message,
-            conducted=message_data.conducted if message_data.conducted is not None else datetime.now(timezone.utc),
+            conducted=(
+                message_data.conducted
+                if message_data.conducted is not None
+                else datetime.now(timezone.utc)
+            ),
             history=history,
             info=message_data.info,
         )

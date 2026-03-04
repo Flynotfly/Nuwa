@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
-from src.views.user import user_router
 from src.views.character import character_router
 from src.views.chat import chat_router
 from src.views.chat_bot.chat_bot import chat_bot_router
+from src.views.user import user_router
 
 router = APIRouter()
 router.include_router(user_router)

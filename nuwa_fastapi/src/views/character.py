@@ -11,7 +11,6 @@ from src.models.character import (CharacterCreate, CharacterPartiallyUpdate,
                                   CharacterRetrieve, CharacterRetrieveAll)
 from src.views.utils import raise_non_found_error
 
-
 character_router = APIRouter(prefix="/characters", tags=["character"])
 
 

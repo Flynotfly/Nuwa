@@ -1,11 +1,12 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from src.models.chat_bot import ChatPayload
-from src.database import User, Chat, Message
-from src.db_connection import get_db
 from src.auth import get_current_user
+from src.database import Chat, Message, User
+from src.db_connection import get_db
+from src.models.chat_bot import ChatPayload
 from src.views.chat_bot.detect import ALLOWED_ANSWER_TYPES, detect_answer_type
 
 chat_bot_router = APIRouter(prefix="/chat", tags=["chat_bot"])
@@ -17,9 +18,9 @@ DB = Annotated[Session, Depends(get_db)]
 
 @chat_bot_router.post("")
 def chat_bot(
-        payload: ChatPayload,
-        user: CurrentUser,
-        db: DB,
+    payload: ChatPayload,
+    user: CurrentUser,
+    db: DB,
 ):
     user_input = payload.user_input
     chat_id = payload.chat_id
@@ -41,10 +42,14 @@ def chat_bot(
             detail="As 'is_user_message' is true, 'message' should be provided.",
         )
 
-    chat: Chat | None = db.query(Chat).filter(
-        Chat.id == chat_id,
-        Chat.owner_id == user.id,
-    ).first()
+    chat: Chat | None = (
+        db.query(Chat)
+        .filter(
+            Chat.id == chat_id,
+            Chat.owner_id == user.id,
+        )
+        .first()
+    )
     if chat is None:
         raise HTTPException(
             status_code=400,
@@ -53,11 +58,15 @@ def chat_bot(
 
     previous_message = None
     if previous_message_id:
-        previous_message: Message | None = db.query(Message).filter(
-            Message.id == previous_message_id,
-            Message.owner_id == user.id,
-            Message.chat_id == chat.id,
-        ).first()
+        previous_message: Message | None = (
+            db.query(Message)
+            .filter(
+                Message.id == previous_message_id,
+                Message.owner_id == user.id,
+                Message.chat_id == chat.id,
+            )
+            .first()
+        )
         if previous_message is None:
             raise HTTPException(
                 status_code=400,
