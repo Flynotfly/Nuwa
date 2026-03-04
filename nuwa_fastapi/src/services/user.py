@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from src.auth import hash_password, verify_password
 from src.database import User
-from src.models.users import SignInModel, SignUpModel
+from src.models.user import SignInModel, SignUpModel
 
 
 def register_user(
