@@ -9,8 +9,9 @@ from sqlalchemy.orm import Session
 
 from src.database import User
 from src.db_connection import get_db
+from src.config import settings
 
-SECRET_KEY = "unprotected-lkfermfe23423fkermflkerfkmsdfesfrefreg"
+SECRET_KEY = settings.jwt_secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -90,7 +91,7 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> User:
     username = decode_token(token, expected_type="access")
-    user = db.query(User).filter(User.username == username).first()
+    user: User | None = db.query(User).filter(User.username == username).first()
     if user is None or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
