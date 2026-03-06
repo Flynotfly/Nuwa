@@ -11,7 +11,7 @@ from src.database import User
 from src.db_connection import get_db
 from src.config import settings
 
-SECRET_KEY = settings.jwt_secret_key
+SECRET_KEY = settings.jwt_signing_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
