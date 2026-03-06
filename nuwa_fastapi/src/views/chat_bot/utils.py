@@ -70,7 +70,6 @@ async def save_messages(
     chat: Chat,
     previous_message: Message | None,
     messages: list,
-    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     if previous_message:
