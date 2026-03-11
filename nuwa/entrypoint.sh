@@ -3,7 +3,7 @@ set -e
 
 ./wait-for-it.sh db:5432 -t 30
 
-if ["$ROLE" = "web"]; then
+if [ "$ROLE" = "web" ]; then
 	mkdir -p /run/uwsgi
 	chown www-data:www-data /run/uwsgi
 	echo "Running database migrations..."
