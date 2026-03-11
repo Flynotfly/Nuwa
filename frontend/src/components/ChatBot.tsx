@@ -21,7 +21,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import DownloadIcon from '@mui/icons-material/Download';
 import dayjs from 'dayjs';
 import { useParams } from 'react-router-dom';
-import { getChatDetail, getAllMessages, sendChatMessage, sendChatMessageStrea, updateMessage } from '../api/api';
+import { getChatDetail, getAllMessages, sendChatMessage, sendChatMessageStream, updateMessage } from '../api/api';
 import {AnswerType, ChatMessage} from '../types/chatting';
 import { ChatDetail } from '../types/chat';
 import { updateChatStructure, removeLastElementIfNotEmpty, findBranches, rebaseBranch } from '../utils';
@@ -288,10 +288,10 @@ const ChatBot = () => {
         })
       },
       (messages) => {
-          setStreamingText('');
-          setCurrentMessages((prev) => prev.filter((msg) => msg.id !== -1 && msg.id !== -2));
-          handleNewMessages(messages, sendPreviousMessageId);
-          setLoading(false);
+        setStreamingText('');
+        setCurrentMessages((prev) => prev.filter((msg) => msg.id !== -1 && msg.id !== -2));
+        handleNewMessages(messages, sendPreviousMessageId);
+        setLoading(false);
       },
       (errorMsg) => {
         console.error('Stream error:', errorMsg);
@@ -803,42 +803,41 @@ const ChatBot = () => {
               }}
             />
 
-            {/* Generate Image Button */}
-            <Button
-              type="button"
-              variant="outlined"
-              onClick={handleGenerateImage}
-              disabled={loading}
-              sx={{
-                borderRadius: 2,
-                minWidth: { xs: 'auto', sm: 140 },
-                padding: '8px 16px',
-                whiteSpace: 'nowrap',
-                height: 'fit-content',
-                alignSelf: 'flex-end',
-              }}
-              startIcon={<ImageIcon />}
-            >
-              {isMobile ? 'Generate' : 'Generate Image'}
-            </Button>
+            {/* Buttons stacked vertically: Generate Image on top, Send below */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {/* Generate Image Button */}
+              <Button
+                type="button"
+                variant="outlined"
+                onClick={handleGenerateImage}
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  minWidth: { xs: 'auto', sm: 'auto' },
+                  padding: '8px 16px',
+                  whiteSpace: 'nowrap',
+                  height: 'fit-content',
+                }}
+                startIcon={<ImageIcon />}
+              >
+              </Button>
 
-            {/* Send Message Button */}
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={loading || !inputMessage.trim()}
-              sx={{
-                borderRadius: 2,
-                minWidth: { xs: 'auto', sm: 120 },
-                padding: '8px 16px',
-                whiteSpace: 'nowrap',
-                height: 'fit-content',
-                alignSelf: 'flex-end',
-              }}
-              endIcon={<SendIcon />}
-            >
-              {isMobile ? 'Send' : 'Send Message'}
-            </Button>
+              {/* Send Message Button */}
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading || !inputMessage.trim()}
+                sx={{
+                  borderRadius: 2,
+                  minWidth: { xs: 'auto', sm: 'auto' },
+                  padding: '8px 16px',
+                  whiteSpace: 'nowrap',
+                  height: 'fit-content',
+                }}
+                endIcon={<SendIcon />}
+              >
+              </Button>
+            </Box>
           </Box>
         </Box>
       </Paper>
