@@ -28,10 +28,10 @@ class ChatBotView(APIView):
                 {"error": "chat_id is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if answer_type not in ALLOWED_ANSWER_TYPES:
+        if answer_type not in ALLOWED_ANSWER_TYPES and answer_type != "detect":
             return Response(
                 {
-                    "error": f"Wrong 'answer_type'. Allowed answer types: {ALLOWED_ANSWER_TYPES}."
+                    "error": f"Wrong 'answer_type'. Allowed answer types: {ALLOWED_ANSWER_TYPES} and 'detect'."
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
