@@ -12,7 +12,6 @@ ALLOWED_HOSTS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://backend.nuwa.orange-city.ru",
     "https://nuwa.orange-city.ru",
 ]
 SECURE_HSTS_SECONDS = 3600
