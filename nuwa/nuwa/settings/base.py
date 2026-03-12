@@ -156,10 +156,10 @@ OPENROUTER_KEY = config("OPENROUTER_KEY")
 
 CELERY_BROKER_URL = config("CELERY_BROKER_URL")
 CELERY_BEAT_SCHEDULE = {
-    # "process-due-messages": {
-    #     "task": "chat.tasks.process_due_messages",
-    #     "schedule": 30.0,
-    # },
+    "process-due-messages": {
+        "task": "chat.tasks.process_scheduled_messages",
+        "schedule": 30.0,
+    },
     "generate-schedule-messages": {
         "task": "chat.tasks.generate_schedule_messages",
         "schedule": crontab(hour="*/8", minute=0),
